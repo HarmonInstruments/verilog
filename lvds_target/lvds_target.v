@@ -1,11 +1,32 @@
+/*
+ * Copyright (C) 2014 Harmon Instruments, LLC
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/
+ *
+ *
+ * LVDS remote IO
+ *
+ */
+
 `timescale 1ns / 1ps
 
-module lvds_tx(input c, output dp, dn, input v, input [31:0] d);
+module lvds_tx(input c, output op, on, input v, input [31:0] d);
    parameter INV = 0;
    reg [1:0] 	od = 0;
    reg [32:0] 	sr = ~33'h0;
 
-   oddr_lvds oddr_lvds_i(.c(c), .i(INV ? ~od : od), .dp(dp), .dn(dn));
+   oddr_lvds oddr_lvds_i(.c(c), .i(INV ? ~od : od), .op(op), .on(on));
 
    always @ (posedge c)
      begin
@@ -15,7 +36,7 @@ module lvds_tx(input c, output dp, dn, input v, input [31:0] d);
      end
 endmodule
 
-module lvds_rx(input c, dp, dn, output reg [55:0] d=0, output reg v=0);
+module lvds_rx(input c, ip, in, output reg [55:0] d=0, output reg v=0);
    parameter INV = 0;
    wire [1:0] 	 id;
    reg [1:0] 	 id_buf;
@@ -23,7 +44,7 @@ module lvds_rx(input c, dp, dn, output reg [55:0] d=0, output reg v=0);
    reg [57:0] 	 sr = ~58'h0;
    reg 		 vp = 0;
 
-   iddr_lvds iddr_lvds_i(.c(c), .o(id), .dp(dp), .dn(dn));
+   iddr_lvds iddr_lvds_i(.c(c), .o(id), .ip(ip), .in(in));
 
    always @ (posedge c)
      begin
@@ -56,8 +77,8 @@ module lvds_io
    wire 	    rv_100;
    reg 		    rv_100_d = 0;
 
-   lvds_rx #(.INV(RINV)) r(.c(clock_2x), .dp(sdip), .dn(sdin), .d(rd), .v(rv));
-   lvds_tx #(.INV(TINV)) t(.c(clock_2x), .dp(sdop), .dn(sdon), .d(td), .v(tv));
+   lvds_rx #(.INV(RINV)) r(.c(clock_2x), .ip(sdip), .in(sdin), .d(rd), .v(rv));
+   lvds_tx #(.INV(TINV)) t(.c(clock_2x), .op(sdop), .on(sdon), .d(td), .v(tv));
 
    always @ (posedge clock_2x)
      begin
