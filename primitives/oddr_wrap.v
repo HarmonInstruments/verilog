@@ -20,7 +20,7 @@
 `include "config.vh"
 
 module oddr_wrap (input c, input [1:0] i, output o);
-   ODDR2 #(.DDR_ALIGNMENT("C0"), .INIT(1'b1), .SRTYPE("SYNC")) ODDR2_i
+   ODDR2 #(.DDR_ALIGNMENT("C0"), .INIT(1'b1), .SRTYPE("ASYNC")) ODDR2_i
      (.Q(o),
       .C0(c), .C1(~c),
       .CE(1'b1),
