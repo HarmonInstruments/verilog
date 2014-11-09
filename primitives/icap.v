@@ -47,12 +47,12 @@ module icap(input c, w, input [15:0] i);
 			 .I(state[3] ? di[15:8] : di[7:0]), .WRITE(1'b0));
 `endif
 `ifdef SPARTAN6
-   ICAP_SPARTAN6 ICAP_i(.BUSY(), .O(), .CE(1'b0), .CLK(state[3]), .I(di),
-			.WRITE(1'b0));
+   ICAP_SPARTAN6 ICAP_i(.BUSY(), .O(), .CE(1'b0), .CLK(state[3]),
+			.I({di[7:0], di[15:8]}), .WRITE(1'b0));
 `endif
 `ifdef X7SERIES
-   ICAPE2 #(.ICAP_WIDTH("X16")) ICAP_i(.O(), .CLK(state[3]), .CSIB(1'b0),
-				       .I(di), .RDWRB(1'b0));
+   ICAPE2 #(.ICAP_WIDTH("X16")) ICAP_i
+     (.O(), .CLK(state[3]), .CSIB(1'b0),.I({di[7:0], di[15:8]}), .RDWRB(1'b0));
 `endif
 endmodule
 
