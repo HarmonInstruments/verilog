@@ -20,11 +20,20 @@
 `include "config.vh"
 
 module iddr_wrap(input c, input i, output[1:0] o);
-   IDDR2 #(.DDR_ALIGNMENT("C0"), .SRTYPE("SYNC")) IDDR2_i
+`ifdef X7SERIES
+   IDDR #(.DDR_CLK_EDGE("SAME_EDGE"), .SRTYPE("ASYNC")) IDDR_i
+     (.Q1(o[0]), .Q2(o[1]),
+      .C(c),
+      .CE(1'b1),
+      .D(i),
+      .R(1'b0), .S(1'b0));
+`else
+   IDDR2 #(.DDR_ALIGNMENT("C0"), .SRTYPE("ASYNC")) IDDR2_i
      (.Q0(o[0]), .Q1(o[1]),
       .C0(c), .C1(~c),
       .CE(1'b1),
       .D(i),
       .R(1'b0), .S(1'b0)
       );
+`endif
 endmodule

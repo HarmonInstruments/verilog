@@ -20,11 +20,23 @@
 `include "config.vh"
 
 module oddr_wrap (input c, input [1:0] i, output o);
+`ifdef X7SERIES
+   ODDR #(.DDR_CLK_EDGE("SAME_EDGE"), .INIT(1'b1), .SRTYPE("ASYNC"))
+   ODDR_inst
+     (
+      .Q(o),
+      .C(c),
+      .CE(1'b1), // 1-bit clock enable input
+      .D1(i[0]), // positive edge
+      .D2(i[1]), // negative edge
+      .R(1'b0), .S(1'b0));
+`else
    ODDR2 #(.DDR_ALIGNMENT("C0"), .INIT(1'b1), .SRTYPE("ASYNC")) ODDR2_i
      (.Q(o),
       .C0(c), .C1(~c),
       .CE(1'b1),
       .D0(i[0]), .D1(i[1]),
       .R(1'b0), .S(1'b0));
+`endif
 endmodule
 
