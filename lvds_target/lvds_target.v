@@ -76,20 +76,27 @@ module lvds_io
    reg [31:0] 	    td;
    wire 	    rv_100;
    reg 		    rv_100_d = 0;
+   reg [7:0] 	    tcount = 0;
+   reg 		    tmatch = 0;
 
    lvds_rx #(.INV(RINV)) r(.c(clock_2x), .ip(sdip), .in(sdin), .d(rd), .v(rv));
    lvds_tx #(.INV(TINV)) t(.c(clock_2x), .op(sdop), .on(sdon), .d(td), .v(tv));
 
    always @ (posedge clock_2x)
      begin
-	if(rv)
+	if(tmatch)
 	  begin
 	     if(rd[55:48] == 0) // calibration
 	       td <= rd[40] ? rd[31:0] : 32'h080FF010;
 	     else
 	       td <= rdata;
 	  end
-	tv <= rv;
+	if(rv)
+	  tcount <= 8'd1;
+	else if(tcount != 0)
+	  tcount <= tcount + 1'b1;
+	tmatch <= tcount == 255;
+	tv <= tmatch;
      end
 
    always @ (posedge clock)
@@ -99,6 +106,6 @@ module lvds_io
 	wvalid <= rv_100_d;
      end
 
-   sync_pulse sync_rv(.ci(clock_2x), .i(tv), .co(clock), .o(rv_100));
+   sync_pulse sync_rv(.ci(clock_2x), .i(rv), .co(clock), .o(rv_100));
 
 endmodule
