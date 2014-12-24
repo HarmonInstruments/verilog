@@ -30,7 +30,7 @@ module spi_8bit_rw
    input 	    miso
    );
 
-   reg [6:0] 	    state = 7'h0;
+   reg [5:0] 	    state = 6'h0;
    reg 		    cs_hold = 0;
 
    always @ (posedge clock)
@@ -44,11 +44,11 @@ module spi_8bit_rw
 	  end
 	else if(state != 0)
 	  begin
-	     if(state[3:0] == 15)
+	     if(state[2:0] == 7)
 	       dout <= {dout[6:0], miso};
 	     state <= state + 1'b1;
 	  end
-	sck <= state[3];
+	sck <= state[2];
 	cs <= (state == 0) && ~cs_hold;
      end
 
