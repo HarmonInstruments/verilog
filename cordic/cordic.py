@@ -49,11 +49,7 @@ def gen_cordic(name,
                nbits_ain = 20):
     angles = np.arctan(2.0 ** (-1.0 * np.arange(stages-1)))
     angles = np.concatenate([[np.pi*0.5], angles])
-    print '/*', angles*180.0/np.pi, '*/'
-    angles /= np.pi
-    angles *= 2**(nbits_ain-1)
-    angles = np.round(angles)
-    print '/*', angles, '*/'
+    angles *= np.round((2**(nbits_ain-1))/np.pi)
     nbits_a = []
     nbits_d = []
     for i in range(stages):
