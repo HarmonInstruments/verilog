@@ -103,12 +103,12 @@ def gen_translate(name,
                   nbits_din = 19,
                   nbits_dout = 20,
                   nbits_aout = 20):
-    nbits_a = stages
-    angles = cordic_angles(stages=stages, bits = nbits_a)
+    nbits_ain = stages
+    angles = cordic_angles(stages=stages, bits = nbits_ain)
     nbits_a = []
     nbits_d = []
     for i in range(stages):
-        nbits_a.append(nbits_a)
+        nbits_a.append(nbits_ain)
         nbits_d.append(nbits_dout)
     gain = 1.0
     for i in range(0, stages):
@@ -121,7 +121,7 @@ def gen_translate(name,
     gen_port('clock', pdir='in')
     gen_port('in_re, in_im', pdir = 'in', bits=nbits_din, signed=True)
     nbo = nbits_d[stages-1]
-    gen_port('out_angle', pdir = 'out', bits=nbits_a, signed=True)
+    gen_port('out_angle', pdir = 'out', bits=nbits_ain, signed=True)
     gen_port('out_mag', pdir = 'out', bits=nbo-1, signed=False, last=True)
     
     # declarations
