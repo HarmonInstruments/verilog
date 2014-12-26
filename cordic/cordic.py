@@ -42,14 +42,18 @@ def gen_addsub(out, sub, in1, in2):
     print "\t{0} <= ({1}) ? {2} - {3} : {2} + {3};".format(
         out, sub, in1, in2)
 
+def cordic_angles(stages, bits):
+    angles = np.arctan(2.0 ** (-1.0 * np.arange(stages-1)))
+    angles = np.concatenate([[np.pi*0.5], angles])
+    angles = np.round(angles * (2**(bits-1))/np.pi)
+    return angles
+
 def gen_cordic(name,
                stages = 20,
                nbits_din = 16,
                nbits_dout = 20,
                nbits_ain = 20):
-    angles = np.arctan(2.0 ** (-1.0 * np.arange(stages-1)))
-    angles = np.concatenate([[np.pi*0.5], angles])
-    angles *= np.round((2**(nbits_ain-1))/np.pi)
+    angles = cordic_angles(stages=stages, bits = nbits_ain)
     nbits_a = []
     nbits_d = []
     for i in range(stages):
@@ -99,18 +103,12 @@ def gen_translate(name,
                   nbits_din = 19,
                   nbits_dout = 20,
                   nbits_aout = 20):
-    nbits_ain = stages
-    angles = np.arctan(2.0 ** (-1.0 * np.arange(stages-1)))
-    angles = np.concatenate([[np.pi*0.5], angles])
-    print '/*', angles*180.0/np.pi, '*/'
-    angles /= np.pi
-    angles *= 2**(nbits_ain-1)
-    angles = np.round(angles)
-    print '/*', angles, '*/'
+    nbits_a = stages
+    angles = cordic_angles(stages=stages, bits = nbits_a)
     nbits_a = []
     nbits_d = []
     for i in range(stages):
-        nbits_a.append(nbits_ain)
+        nbits_a.append(nbits_a)
         nbits_d.append(nbits_dout)
     gain = 1.0
     for i in range(0, stages):
@@ -123,7 +121,7 @@ def gen_translate(name,
     gen_port('clock', pdir='in')
     gen_port('in_re, in_im', pdir = 'in', bits=nbits_din, signed=True)
     nbo = nbits_d[stages-1]
-    gen_port('out_angle', pdir = 'out', bits=nbits_ain, signed=True)
+    gen_port('out_angle', pdir = 'out', bits=nbits_a, signed=True)
     gen_port('out_mag', pdir = 'out', bits=nbo-1, signed=False, last=True)
     
     # declarations
