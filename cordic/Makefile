@@ -5,4 +5,6 @@ translate.v: cordic.py
 
 clean:
 	rm -rf *~
-	make -C testbenches clean
+	rm *.v
+	make -C test_rotate clean
+	make -C test_translate clean
