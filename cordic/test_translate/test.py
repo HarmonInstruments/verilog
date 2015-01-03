@@ -80,8 +80,10 @@ def run_test(dut):
     mrms = np.sqrt(mrms)
     arms = np.sqrt(arms)
     print "mean magnitude error =", msum
+    print "mean magnitude error (LSB) =", msum * dmult
     print "mean angle error (radian) =", asum
     print "mean angle error (LSB) =", asum * amult
     print "RMS magnitude error =", mrms
+    print "RMS magnitude error (LSB) =", mrms * dmult
     print "RMS angle error (radian) =", arms
     print "RMS angle error (LSB) =", arms * amult

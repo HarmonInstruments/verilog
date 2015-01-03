@@ -150,8 +150,10 @@ def gen_translate(name,
         else:
             print "\treg signed [{0}:0] angle_{1} = 0;".format(nbits_a[i]-1, i)
         msb = nbits_d[i]-1
-        print "\treg signed [{0}:0] re_{1} = 0;".format(msb, i)
+        print "\treg [{0}:0] re_{1} = 0;".format(msb-1, i)
         if i != stages - 1:
+            if i > 1:
+                msb -= (i-1)
             print "\treg signed [{0}:0] im_{1} = 0;".format(msb, i)
     # assigns
     print "\tassign out_mag = re_{};".format(stages-1)
@@ -160,9 +162,9 @@ def gen_translate(name,
     # prerotate - re = x, im = y,
     # if y < 0, rotate 90 degrees ccw else rotate 90 ccw
     print "\tangle_0 <= (in_im < 0);"
-    gen_addsub('re_0', 'in_im < 0', "2'sd0", 'in_im')
-    gen_addsub('im_0', 'in_im >=  0', "2'sd0", 'in_re')
-    # rotate stages - first 6 use angle bits?
+    print "\tre_0 <= in_im < 0 ? 2'sd0 - in_im : in_im;"
+    print "\tim_0 <= in_im < 0 ? in_re : 2'sd0 - in_re;"
+    # rotate stages
     # pre: same as in
     # 1: in + 1
     # 2: prev + 1
@@ -182,14 +184,17 @@ def gen_translate(name,
                        'angle_{}'.format(n-1),
                        vint(angles[n])
                        )
-        gen_addsub(sname('re',  n), ""+sub,
-                   sname('re', n-1),
-                   sname('(im', n-1) + " >>> {})".format(n-1))
+        if n < 11: # fixme
+            im_shifted = '(im_{0} >>> {0})'.format(n-1)
+            abs_im = "(im_{0} < 0 ? 2'sd0 - {1} : {1})".format(n-1, im_shifted)
+            print "\tre_{0} <= $signed(re_{1}) + {2};".format(n, n-1, abs_im)
+        else:
+            print "\tre_{} <= re_{};".format(n, n-1)
         if n != stages - 1:
             gen_addsub(sname('im',  n),
                        "{} >= 0".format(sname('im', n-1)),
                        sname('im', n-1),
-                       sname('(re', n-1) + " >>> {})".format(n-1))
+                       sname('(re', n-1) + " >> {})".format(n-1))
     print "end"
 
     print """initial
