@@ -60,7 +60,7 @@ def run_test(dut):
     """Test CORDIC rotate"""
     clock = dut.clock
     a = cocotb.fork(Clock(clock, 2500).start())
-    count = 10000
+    count = 1000
     angles = np.random.random(count) * 2.0 * np.pi
     din = np.exp(1j*angles)
     msum = 0.0
