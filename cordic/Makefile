@@ -1,7 +1,7 @@
-cordic.v: cordic.py
-	./cordic.py > cordic.v
 translate.v: cordic.py
 	./cordic.py translate > translate.v
+test:
+	make -C test_translate
 
 clean:
 	rm -rf *~

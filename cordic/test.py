@@ -25,9 +25,9 @@ from cocotb.clock import Clock
 from cocotb.triggers import Timer, RisingEdge, ReadOnly, Event
 from cocotb.result import TestFailure, ReturnValue
 
-amult = 2**20/(2.0*np.pi)
+amult = 2**18/(2.0*np.pi)
 dmult = 2**18-1.0
-stages = 20
+stages = 18
 gain = 1.6467
 
 @cocotb.coroutine

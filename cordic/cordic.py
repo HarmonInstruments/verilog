@@ -58,7 +58,7 @@ def gen_angle_roms(stages, bits, angles):
         gen_angle_rom('arom_{}'.format(i), bits, angles[6*i:6*i+6])
 
 def gen_translate(name,
-                  stages = 20,
+                  stages = 18,
                   nbits_din = 19,
                   nbits_dout = 20,
                   nbits_aout = 20):
@@ -104,19 +104,15 @@ def gen_translate(name,
         else:
             print ";"
     print "always @ (posedge clock) begin"
-    # prerotate - re = x, im = y,
-    # if y < 0, rotate 90 degrees ccw else rotate 90 ccw
+    # prerotate - if im < 0, rotate 90 degrees ccw else rotate 90 ccw
     print "\tangle_0 <= (in_im < 0);"
     print "\tre_0 <= in_im < 0 ? 2'sd0 - in_im : in_im;"
     print "\tim_0 <= in_im < 0 ? in_re : 2'sd0 - in_re;"
     # rotate stages
-    # pre: same as in
-    # 1: in + 1
-    # 2: prev + 1
     for n in range(1, stages):
         sub = "im_{} < 0".format(n-1)
         print "\tangle_{0} <= {{{1}, angle_{2}}};".format(n, sub, n-1)
-        if n < 11: # fixme
+        if n < 13: # fixme
             im_shifted = '(im_{0} >>> {0})'.format(n-1)
             abs_im = "(im_{0} < 0 ? 2'sd0 - {1} : {1})".format(n-1, im_shifted)
             print "\tre_{0} <= $signed(re_{1}) + {2};".format(n, n-1, abs_im)
@@ -137,12 +133,5 @@ def gen_translate(name,
     print "endmodule"
 
 if __name__=="__main__":
-    try:
-        arg = sys.argv[1]
-    except:
-        arg = 'rotate'
-    if arg == 'translate':
-        gen_translate("translate")
-    else:
-        gen_cordic("cordic")
+    gen_translate("translate")
 
