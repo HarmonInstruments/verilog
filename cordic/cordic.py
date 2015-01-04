@@ -20,28 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/
 import sys, os
 import numpy as np
 
-def vint(n):
-    nbits = int(1+np.ceil(np.log2(np.abs(n)+1)))
-    return "{}'sd{}".format(nbits, int(n))
-
-def sname(name, n):
-    return "{}_{}".format(name, n)
-
-def gen_port(name, pdir="in", bits=1, signed=False, last=False):
-    print "\t{}put".format(pdir),
-    if signed:
-        print "signed",
-    if bits > 1:
-        print "[{}:0]".format(bits-1),
-    if not last:
-        print name + ","
-    else:
-        print name + ");"
-
-def gen_addsub(out, sub, in1, in2):
-    print "\t{0} <= ({1}) ? {2} - {3} : {2} + {3};".format(
-        out, sub, in1, in2)
-
 def cordic_angles(bits):
     stages = 36
     angles = np.arctan(2.0 ** (-1.0 * np.arange(stages-1)))
@@ -100,11 +78,11 @@ def gen_translate(name,
     print "gain =", gain
     print "*/"
     print "module {} (".format(name)
-    gen_port('clock', pdir='in')
-    gen_port('in_re, in_im', pdir = 'in', bits=nbits_din, signed=True)
+    print "\tinput clock,"
+    print "\tinput signed [{}:0] in_re, in_im,".format(nbits_din-1)
     nbo = nbits_d[stages-1]
-    gen_port('out_angle', pdir = 'out', bits=nbits_ain, signed=True)
-    gen_port('out_mag', pdir = 'out', bits=nbo-1, signed=False, last=True)
+    print "\toutput signed [{}:0] out_angle,".format(nbits_ain-1)
+    print "\toutput [{}:0] out_mag);".format(nbo-2)
     gen_angle_roms(stages, nbits_ain, angles)
     # declarations
     for i in range(stages):
@@ -145,10 +123,9 @@ def gen_translate(name,
         else:
             print "\tre_{} <= re_{};".format(n, n-1)
         if n != stages - 1:
-            gen_addsub(sname('im',  n),
-                       "{} >= 0".format(sname('im', n-1)),
-                       sname('im', n-1),
-                       sname('(re', n-1) + " >> {})".format(n-1))
+            re_shifted = '(re_{0} >> {0})'.format(n-1)
+            print "\tim_{0} <= im_{1} >= 0 ? im_{1} - {2} : im_{1} + {2};"\
+                .format(n, n-1, re_shifted)
     print "end"
 
     print """initial
