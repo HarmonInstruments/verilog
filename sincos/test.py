@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-"""HIFIFO: Harmon Instruments PCI Express to FIFO
-Copyright (C) 2014 Harmon Instruments, LLC
+"""
+Copyright (C) 2014-2015 Harmon Instruments, LLC
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,39 +25,70 @@ from cocotb.clock import Clock
 from cocotb.triggers import Timer, RisingEdge, ReadOnly, Event
 from cocotb.result import TestFailure, ReturnValue
 
-amult = 2**20/(2.0*np.pi)
-dmult = 16384
-stages = 24
-gain = 1.6467
+nbits_a = 20
+nbits_d = 18
+pipestages = 8
+count = 10000
+
+amult = 2**nbits_a/(2.0*np.pi)
+dmult = 2**(nbits_d-1)-1.0
 
 @cocotb.coroutine
-def do_rotate(dut, din, angle):
-#This coroutine performs a write of the RAM
-    yield RisingEdge(dut.clock)
-    angle_scaled = int(round(amult * angle))
-    dut.ain = angle_scaled
-    in_scaled = np.round(din*dmult)
-    dut.in_re = int(np.real(in_scaled))
-    dut.in_im = int(np.imag(in_scaled))
-    for i in range(stages):
-        yield RisingEdge(dut.clock)
+def do_angle(dut, angle):
+    yield RisingEdge(dut.c)
+    in_scaled = np.round(angle*amult)
+    dut.a = int(in_scaled)
     yield ReadOnly() # Wait until all events have executed for this timestep
-    result = int(dut.out_re.value.signed_integer) + 1j* int(dut.out_im.value.signed_integer)
-    expected = gain * in_scaled * np.exp(1j*angle_scaled/amult)
-    error = np.abs(result - expected) / np.abs(expected)
-    if error > 5e-4:
-        dut.log.error("FAIL: din = {}, angle = {}, result = {}, expected = {}, error = {}".format(din, angle, result, expected, error))
-        raise TestFailure("incorrect result")
+    result_re = int(dut.o_cos.value.signed_integer)*1.0/dmult
+    result_im = int(dut.o_sin.value.signed_integer)*1.0/dmult
+    result = result_re + 1j* result_im
     raise ReturnValue(result)
 
 @cocotb.test()
 def run_test(dut):
-    """Test CORDIC rotate"""
-    clock = dut.clock
-    a = cocotb.fork(Clock(clock, 2500).start())
-    angles = np.random.random(20) * 2.0 * np.pi
-    for angle in angles:
-        a = yield do_rotate(dut, 1.0 + 0.0j, angle)
-    for angle in angles:
-        a = yield do_rotate(dut, -1.0 + 0.0j, angle)
-    
+    """Test complex exponential generator"""
+    a = cocotb.fork(Clock(dut.c, 2500).start())
+    angles = np.random.random(count) * 2.0 * np.pi
+    #angles = np.linspace(0,1,count) * 2.0 * np.pi
+    expected = np.exp(1j*angles)
+    expected_mag = np.abs(expected)
+    expected_angle = np.angle(expected)
+    result = np.zeros(count, dtype=complex)
+    for i in range(count+pipestages):
+        if i < count:
+            v = yield do_angle(dut, angles[i])
+        else:
+            v = yield do_angle(dut, 0.0)
+        if i >= pipestages:
+            result[i-pipestages] = v
+
+    result_angle = np.angle(result)
+    result_mag = np.abs(result)
+
+    error_angle = result_angle - expected_angle
+    error_mag = result_mag - expected_mag
+
+    msum = np.sum(error_mag)/count
+    asum = np.sum(error_angle)/count
+    mrms = np.sqrt(np.sum(np.square(error_mag))/count)
+    arms = np.sqrt(np.sum(np.square(error_angle))/count)
+
+    print "maximum magnitude error =", np.max(np.abs(error_mag))
+    print "maximum magnitude error (LSB) =", np.max(np.abs(error_mag)) * dmult
+    print "maximum angle error (radian) =", np.max(np.abs(error_angle))
+    print "maximum angle error (LSB) =", np.max(np.abs(error_angle)) * amult
+    print "mean magnitude error =", msum
+    print "mean magnitude error (LSB) =", msum * dmult
+    print "mean angle error (radian) =", asum
+    print "mean angle error (LSB) =", asum * amult
+    print "RMS magnitude error =", mrms
+    print "RMS magnitude error (LSB) =", mrms * dmult
+    print "RMS angle error (radian) =", arms
+    print "RMS angle error (LSB) =", arms * amult
+
+    for i in range(count):
+        if np.abs(error_angle[i]) > 0.1 or np.abs(error_mag[i]) > 0.1:
+            print angles[i], expected[i], result[i]
+
+    if np.max(np.abs(error_angle)) > 1e-4:
+        dut.log.error("FAIL")
