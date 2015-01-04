@@ -20,7 +20,5 @@ along with this program.  If not, see <http://www.gnu.org/licenses/
 name = "translate"
 stages = 18
 nbits_din = 18
-nbits_dout = nbits_din + 1
-nbits_aout = stages
-
+nbits_aout = 18
 pipestages = stages

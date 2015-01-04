@@ -27,7 +27,7 @@ from cocotb.result import TestFailure, ReturnValue
 
 from config import *
 
-amult = 2**stages/(2.0*np.pi)
+amult = 2**nbits_aout/(2.0*np.pi)
 dmult = 2**(nbits_din-1)-1.0
 gain = 1.64676025811
 count = 5000

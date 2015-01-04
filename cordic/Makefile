@@ -6,5 +6,5 @@ test: translate.v
 
 clean:
 	rm -rf *~
-	rm *.v
+	rm -rf *.v
 	make -C test_translate clean

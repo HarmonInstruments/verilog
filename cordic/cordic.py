@@ -27,10 +27,9 @@ def gen_angle_rom(name, bits, angles):
     print "\treg signed [{}:0] {}[0:63];".format(bits-1, name)
     print "initial begin"
     for i in range(64):
-        val = 0
-        for j in range(6):
-            m = (((i & (1<<j)) == 0) * 2) - 1 # -1 if i[j] is set or else 1
-            val += m * angles[j]
+        j = np.arange(6)
+        m = (((i & (1<<j)) == 0) * 2) - 1 # -1 if i[j] is set or else 1
+        val = np.sum(m * angles[j])
         val = np.clip(val, -1.0 * 2**(bits-1), (2**bits-1)-1)
         print "\t{}[{}] = {};".format(name, i, int(np.round(val)))
     print "end"
@@ -61,12 +60,12 @@ def gen_translate():
     # declarations
     for i in range(stages):
         print "\treg [{0}:0] angle_{0} = 0;".format(i)
-        msb = nbits_din
+    for i in range(stages):
         print "\treg [{0}:0] re_{1} = 0;".format(nbits_din-1, i)
-        if i != stages - 1:
-            if i > 1:
-                msb -= (i-1)
-            print "\treg signed [{0}:0] im_{1} = 0;".format(msb, i)
+    im_msb = nbits_din * np.ones(stages, dtype=int)
+    im_msb[1:stages] -= np.arange(stages-1, dtype=int)
+    for i in range(stages-1):
+        print "\treg signed [{0}:0] im_{1} = 0;".format(im_msb[i], i)
     # assigns
     print "\tassign out_mag = re_{};".format(stages-1)
     print "\twire [31:0] langle = angle_{};".format(stages-1)
@@ -86,7 +85,7 @@ def gen_translate():
     for n in range(1, stages):
         sub = "im_{} < 0".format(n-1)
         print "\tangle_{0} <= {{{1}, angle_{2}}};".format(n, sub, n-1)
-        if n < 13: # fixme
+        if n < im_msb[n]:
             im_shifted = '(im_{0} >>> {0})'.format(n-1)
             abs_im = "(im_{0} < 0 ? 2'sd0 - {1} : {1})".format(n-1, im_shifted)
             print "\tre_{0} <= $signed(re_{1}) + {2};".format(n, n-1, abs_im)
