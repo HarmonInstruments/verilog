@@ -39,7 +39,8 @@ print "\tinput [{}:0] a0, a1, // angle".format(abits-1)
 print "\toutput reg [{}:0] d0, d1);".format(rbits-1)
 print ""
 print "\treg [{}:0] oreg0, oreg1;".format(rbits-1)
-print "\treg [{}:0] bram[0:{}];".format(rbits-1, npoints - 1)
+print '\t(* ram_style = "block" *) reg [{}:0] bram[0:{}];'.format(
+    rbits-1, npoints - 1)
 print ""
 print "always @ (posedge c) begin"
 print "\toreg0 <= bram[a0];"
