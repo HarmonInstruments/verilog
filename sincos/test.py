@@ -25,10 +25,10 @@ from cocotb.clock import Clock
 from cocotb.triggers import Timer, RisingEdge, ReadOnly, Event
 from cocotb.result import TestFailure, ReturnValue
 
-nbits_a = 20
+nbits_a = 22
 nbits_d = 18
 pipestages = 8
-count = 10000
+count = 1000
 
 amult = 2**nbits_a/(2.0*np.pi)
 dmult = 2**(nbits_d-1)-1.0
@@ -49,7 +49,7 @@ def run_test(dut):
     """Test complex exponential generator"""
     a = cocotb.fork(Clock(dut.c, 2500).start())
     angles = np.random.random(count) * 2.0 * np.pi
-    #angles = np.linspace(0,1,count) * 2.0 * np.pi
+    angles = np.linspace(0,1,count) * 2.0 * np.pi
     expected = np.exp(1j*angles)
     expected_mag = np.abs(expected)
     expected_angle = np.angle(expected)
