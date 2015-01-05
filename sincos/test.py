@@ -18,23 +18,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/
 
 """
 
-import sys, os, random
+import sys, random
 import numpy as np
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import Timer, RisingEdge, ReadOnly, Event
 from cocotb.result import TestFailure, ReturnValue
 
-nbits_a = 22
-nbits_d = 18
 pipestages = 8
-count = 1000
-
-amult = 2**nbits_a/(2.0*np.pi)
-dmult = 2**(nbits_d-1)-1.0
+count = 10000
 
 @cocotb.coroutine
-def do_angle(dut, angle):
+def do_angle(dut, angle, dmult, amult):
     yield RisingEdge(dut.c)
     in_scaled = np.round(angle*amult)
     dut.a = int(in_scaled)
@@ -47,18 +42,24 @@ def do_angle(dut, angle):
 @cocotb.test()
 def run_test(dut):
     """Test complex exponential generator"""
+    nbits_a = dut.NBA.value.integer
+    nbits_d = dut.NBD.value.integer
+    amult = 2**nbits_a/(2.0*np.pi)
+    dmult = 2**(nbits_d-1)-1.0
+    print "using {} bits for angle, {} bits for output".format(nbits_a,
+                                                               nbits_d)
     a = cocotb.fork(Clock(dut.c, 2500).start())
     angles = np.random.random(count) * 2.0 * np.pi
-    angles = np.linspace(0,1,count) * 2.0 * np.pi
+    #angles = np.linspace(0,1,count) * 2.0 * np.pi
     expected = np.exp(1j*angles)
     expected_mag = np.abs(expected)
     expected_angle = np.angle(expected)
     result = np.zeros(count, dtype=complex)
     for i in range(count+pipestages):
         if i < count:
-            v = yield do_angle(dut, angles[i])
+            v = yield do_angle(dut, angles[i], dmult, amult)
         else:
-            v = yield do_angle(dut, 0.0)
+            v = yield do_angle(dut, 0.0, dmult, amult)
         if i >= pipestages:
             result[i-pipestages] = v
 

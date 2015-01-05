@@ -76,29 +76,3 @@ module cosine_int
    end
 
 endmodule
-
-// 7 clocks
-module cosine_dual (input c, input [21:0] a0, a1, output [17:0] d0, d1);
-   wire [24:0] rd0, rd1;
-   wire [9:0]  ra0, ra1;
-   cosrom_17 cosrom (.c(c), .a0(ra0), .a1(ra1), .d0(rd0), .d1(rd1));
-   cosine_int cos_0 (.c(c), .a(a0), .rom_d(rd0), .rom_a(ra0), .o(d0));
-   cosine_int cos_1 (.c(c), .a(a1), .rom_d(rd1), .rom_a(ra1), .o(d1));
-endmodule
-
-// 8 clocks
-module sincos_18 (input c, input [21:0] a, output [17:0] o_cos, o_sin);
-   parameter NBA = 22;
-   reg [NBA-1:0] a0, a1;
-   always @ (posedge c) begin
-      a0 <= a;
-      a1 <= (1'b1 << (NBA - 2)) + ~a; // 90 degrees - a, off by one
-   end
-   cosine_dual cos_dual (.c(c), .a0(a0), .a1(a1), .d0(o_cos), .d1(o_sin));
-   initial
-     begin
-	$dumpfile("dump.vcd");
-	$dumpvars(0);
-     end
-
-endmodule
