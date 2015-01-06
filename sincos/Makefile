@@ -5,16 +5,14 @@ export COMPILE_ARGS=-D SIM -I../
 export TOPLEVEL=sincos
 
 CLEANTB = cd testbench; rm -rf *~ *.vcd *.xml sim_build
-
 SOURCES_COMMON = cos_int.v sincos.v
-
-SOURCES_7SERIES = RAMB36E1.v DSP48E1.v cosrom_RAMB36E1.v
-
+VIVADO = $(HOME)/software/Xilinx/Vivado/2014.4
+XPRIMS = $(VIVADO)/ids_lite/ISE/verilog/xeclib/unisims
+SOURCES_7SERIES = cosrom_RAMB36E1.v ../primitives/dsp_DSP48E1.v
 SOURCES_GENERIC = cosrom_generic.v
-
 SOURCES = $(SOURCES_COMMON) $(SOURCES_7SERIES)
 
-export VERILOG_SOURCES=$(SOURCES:%.v=../%.v)
+export VERILOG_SOURCES=$(SOURCES:%.v=../%.v) $(XPRIMS)/RAMB36E1.v $(XPRIMS)/DSP48E1.v
 
 all: cosrom_generic.v cosrom_RAMB36E1.v test
 
