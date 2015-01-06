@@ -18,7 +18,6 @@
 
 `timescale 1ns / 1ps
 
-// 7 clocks
 module cosine_int
   (
    input 		   c,
