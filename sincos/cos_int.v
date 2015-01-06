@@ -88,7 +88,7 @@ module dsp48_wrap
    output signed [47:0]    pcout,
    output signed [NBP-1:0] p);
 
-   parameter NBA = 25; // D is same
+   parameter NBA = 24; // D is same - really 25, but causes a warning
    parameter NBB = 18;
    parameter NBC = 48;
    parameter NBP = 48;
@@ -98,7 +98,7 @@ module dsp48_wrap
    parameter AREG = 1;
    parameter BREG = 1; // 0 - 2
 
-   localparam SA = 25 - NBA; // D is smae
+   localparam SA = 24 - NBA; // D is smae
    localparam SB = 18 - NBB;
    localparam SC = SB + SA;
 
@@ -148,11 +148,11 @@ module dsp48_wrap
       .INMODE({1'b0,mode[4],3'b100}),
       .OPMODE({1'b0,mode[3:2],4'b0101}),
       // signal inputs
-      .A({{5{a[NBA-1]}},a,{SA{1'b0}}}), // 30
+      .A({{6{a[NBA-1]}},a,{SA{1'b0}}}), // 30
       .B({b,{SB{1'b0}}}), // 18
       .C({c,{SC{1'b0}}}), // 48
       .CARRYIN(1'b0),
-      .D({d,{SA{1'b0}}}), // 25
+      .D({d[NBA-1],d,{SA{1'b0}}}), // 25
       // cascade ports
       .ACOUT(acout),
       .BCOUT(bcout),
