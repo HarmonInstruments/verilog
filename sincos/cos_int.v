@@ -150,7 +150,7 @@ module dsp48_wrap
       // signal inputs
       .A({{6{a[NBA-1]}},a,{SA{1'b0}}}), // 30
       .B({b,{SB{1'b0}}}), // 18
-      .C({c,{SC{1'b0}}}), // 48
+      .C({{(48-(SC+NBC)){c[NBC-1]}},c,{SC{1'b0}}}), // 48
       .CARRYIN(1'b0),
       .D({d[NBA-1],d,{SA{1'b0}}}), // 25
       // cascade ports
