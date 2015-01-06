@@ -24,34 +24,33 @@ module cosine_int
    input 		   c,
    input [NBA-3:0] 	   a,
    input 		   s,
-   input [NBO+NBM-2:0] 	   rom_d,
+   input [34:0] 	   rom_d,
    output signed [NBO-1:0] o
    );
 
    parameter NBA = 22; // bits in angle in - all but 12 are interpolated
    parameter NBO = 18; // bits in dout
-   localparam NBP = NBA-12; // bits to interpolator
-   localparam NBM = NBO-10; // bits in interpolation multiply value
+   localparam OSHIFT = NBA + 11 - NBO; // extra bits
 
    reg [2:0] 		   sign = 0;
    reg [NBO-2:0] 	   coarse_2 = 0;
 
    dsp48_wrap
-     #(.NBA(NBP+1),
-       .NBB(NBM+4),
-       .NBC(NBP+NBO),
+     #(.NBA(NBA-11),
+       .NBB(17),
+       .NBC(NBO+OSHIFT),
        .NBP(NBO),
-       .S(NBP),
+       .S(OSHIFT),
        .USE_DPORT("TRUE"), // just for the extra pipe stage
        .AREG(2),
        .BREG(1)
        )
    dsp_i
      (.clock(c),
-      .a({1'b0, a[NBP-1:0]}), // 5 regs to out
-      .b({4'b0, rom_d[NBM-1:0]}), // 3 regs to out
-      .c({1'b0, coarse_2, 1'b1, {(NBP-1){1'b0}}}), // 2 regs to out
-      .d({(NBP+1){1'b0}}),
+      .a({1'b0, a[NBA-13:0]}), // 5 regs to out
+      .b({4'b0, rom_d[12:0]}), // 3 regs to out
+      .c({1'b0, coarse_2, {(OSHIFT){1'b0}}}), // 2 regs to out
+      .d({(NBA-11){1'b0}}),
       .mode({1'b0,2'd3,sign[2],1'b1}), // A+D 2 regs to out
       .acin(30'h0),
       .bcin(18'h0),
@@ -61,7 +60,7 @@ module cosine_int
 
    always @ (posedge c) begin
       sign <= {sign[1:0], ~s};
-      coarse_2 <= (rom_d >> NBM);
+      coarse_2 <= rom_d[34:36-NBO];
    end
 
 endmodule

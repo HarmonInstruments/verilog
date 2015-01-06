@@ -22,11 +22,11 @@ import numpy as np
 
 abits = 10
 shift = 2
+dbits = 22
 
-dbits = int(sys.argv[1])
 derivbits = dbits-9
 rbits = dbits + derivbits
-name = "cosrom_"+sys.argv[1]
+name = "cosrom"
 npoints = 2**abits
 
 n = np.arange(npoints + 1)
@@ -38,7 +38,7 @@ d <<= derivbits
 d = d[:2**abits]
 d |= deriv
 
-if sys.argv[2] == 'RAMB36E1':
+if sys.argv[1] == 'RAMB36E1':
     import x_ramb36e1
     x_ramb36e1.gen(name, dbits+derivbits, abits, d)
     exit()

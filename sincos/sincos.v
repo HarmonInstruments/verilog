@@ -18,26 +18,10 @@
 
 `timescale 1ns / 1ps
 
-// 5 clocks
-module cosine_dual_23 (input c,
-		       input [NBA-3:0] 	    a0, a1,
-		       input 		    s0, s1,
-		       output signed [22:0] d0, d1);
-
-   parameter NBA = 22;
-   wire [34:0] rd0, rd1;
-   cosrom_22 cosrom
-     (.c(c), .a0(a0[NBA-3:NBA-12]), .a1(a1[NBA-3:NBA-12]), .d0(rd0), .d1(rd1));
-   cosine_int #(.NBA(NBA), .NBO(23)) cos_0
-     (.c(c), .a(a0), .rom_d(rd0), .s(s0), .o(d0));
-   cosine_int #(.NBA(NBA), .NBO(23)) cos_1
-     (.c(c), .a(a1), .rom_d(rd1), .s(s1), .o(d1));
-endmodule
-
 // 6 clocks
-module sincos_23 (input c,
-		  input [NBA-1:0] 	  a,
-		  output signed [NBD-1:0] o_cos, o_sin);
+module sincos (input c,
+	       input [NBA-1:0] 	       a,
+	       output signed [NBD-1:0] o_cos, o_sin);
 
    parameter NBA = 26;
    parameter NBD = 23;
@@ -57,8 +41,15 @@ module sincos_23 (input c,
       s0 <= a[NBA-1] ^ a[NBA-2];
       s1 <= a_sin[NBA-1] ^ a_sin[NBA-2];
    end
-   cosine_dual_23 #(.NBA(NBA)) cos_dual
-     (.c(c), .a0(a0), .a1(a1), .s0(s0), .s1(s1), .d0(o_cos), .d1(o_sin));
+
+   wire [34:0] rd0, rd1;
+   cosrom cosrom
+     (.c(c), .a0(a0[NBA-3:NBA-12]), .a1(a1[NBA-3:NBA-12]), .d0(rd0), .d1(rd1));
+   cosine_int #(.NBA(NBA), .NBO(NBD)) cos_0
+     (.c(c), .a(a0), .rom_d(rd0), .s(s0), .o(o_cos));
+   cosine_int #(.NBA(NBA), .NBO(NBD)) cos_1
+     (.c(c), .a(a1), .rom_d(rd1), .s(s1), .o(o_sin));
+
    initial
      begin
 	$dumpfile("dump.vcd");

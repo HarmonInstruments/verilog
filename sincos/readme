@@ -1,4 +1,5 @@
 The following files from a Xilinx Vivado or ISE installation are required to simulate with the Xilinx primitives. Harmon Instruments cannot distribute these due to the Xilinx copyright.
 
 Xilinx/Vivado/2014.4/ids_lite/ISE/verilog/xeclib/unisims/RAMB36E1.v
+Xilinx/Vivado/2014.4/ids_lite/ISE/verilog/xeclib/unisims/DSP48A1.v
 Xilinx/Vivado/2014.4/ids_lite/ISE/verilog/xeclib/unisims/DSP48E1.v
