@@ -32,6 +32,16 @@ npoints = 2**abits
 n = np.arange(npoints + 1)
 d = np.cos(2.0*np.pi*n/(2**(abits+shift))) * ((2**(dbits)) - 1.0)
 d = np.round(d)
+d = d.astype(int)
+deriv = d[:-1] - d[1:]
+d <<= derivbits
+d = d[:2**abits]
+d |= deriv
+
+if sys.argv[2] == 'RAMB36E1':
+    import x_ramb36e1
+    x_ramb36e1.gen(name, dbits+derivbits, abits, d)
+    exit()
 
 print "module {} (".format(name)
 print "\tinput c, // clock"
@@ -51,10 +61,8 @@ print "end"
 print ""
 print "initial begin"
 for i in n[:-1]:
-    val = int(d[i])
-    deriv = int(d[i] - d[i+1])
-    print "\tbram[{}] <= {{{}'d{},{}'d{}}};".format(
-        i, dbits, val, derivbits, deriv)
+    print "\tbram[{}] <= {}'d{};".format(
+        i, dbits+derivbits, d[i])
 
 print "end"
 print "endmodule"

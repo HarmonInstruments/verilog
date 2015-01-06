@@ -25,7 +25,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import Timer, RisingEdge, ReadOnly, Event
 from cocotb.result import TestFailure, ReturnValue
 
-pipestages = 8
+pipestages = 6
 count = 10000
 
 @cocotb.coroutine
@@ -48,6 +48,7 @@ def run_test(dut):
     dmult = 2**(nbits_d-1)-1.0
     print "using {} bits for angle, {} bits for output".format(nbits_a,
                                                                nbits_d)
+    dut.a = 0
     a = cocotb.fork(Clock(dut.c, 2500).start())
     angles = np.random.random(count) * 2.0 * np.pi
     #angles = np.linspace(0,1,count) * 2.0 * np.pi

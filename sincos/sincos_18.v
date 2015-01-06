@@ -20,31 +20,44 @@
 
 // 7 clocks
 module cosine_dual_18 (input c,
-		       input [NBA-1:0] 	    a0, a1,
+		       input [NBA-3:0] 	    a0, a1,
+		       input 		    s0, s1,
 		       output signed [17:0] d0, d1);
    parameter NBA = 22;
    wire [24:0] rd0, rd1;
-   wire [9:0]  ra0, ra1;
-   cosrom_17 cosrom (.c(c), .a0(ra0), .a1(ra1), .d0(rd0), .d1(rd1));
+   cosrom_17 cosrom
+     (.c(c), .a0(a0[NBA-3:NBA-12]), .a1(a1[NBA-3:NBA-12]), .d0(rd0), .d1(rd1));
    cosine_int #(.NBA(NBA), .NBO(18)) cos_0
-     (.c(c), .a(a0), .rom_d(rd0), .rom_a(ra0), .o(d0));
+     (.c(c), .a(a0), .rom_d(rd0), .s(s0), .o(d0));
    cosine_int #(.NBA(NBA), .NBO(18)) cos_1
-     (.c(c), .a(a1), .rom_d(rd1), .rom_a(ra1), .o(d1));
+     (.c(c), .a(a1), .rom_d(rd1), .s(s1), .o(d1));
 endmodule
 
 // 8 clocks
 module sincos_18 (input c,
 		  input [NBA-1:0] 	  a,
 		  output signed [NBD-1:0] o_cos, o_sin);
+
    parameter NBA = 22;
    parameter NBD = 18;
-   reg [NBA-1:0] a0, a1;
+   parameter SIN_EN = 1'b1;
+
+   reg [NBA-3:0]  a0 = 0;
+   reg [NBA-3:0]  a1 = 0;
+   reg 		  s0 = 0;
+   reg 		  s1 = 0;
+
+   // 90 degrees - a, off by one
+   wire [NBA-1:0] a_sin = (SIN_EN << (NBA - 2)) + ~a;
+
    always @ (posedge c) begin
-      a0 <= a;
-      a1 <= (1'b1 << (NBA - 2)) + ~a; // 90 degrees - a, off by one
+      a0 <= a[NBA-2] ? ~ a[NBA-3:0] : a[NBA-3:0];
+      a1 <= a_sin[NBA-2] ? ~ a_sin[NBA-3:0] : a_sin[NBA-3:0];
+      s0 <= a[NBA-1] ^ a[NBA-2];
+      s1 <= a_sin[NBA-1] ^ a_sin[NBA-2];
    end
    cosine_dual_18 #(.NBA(NBA)) cos_dual
-     (.c(c), .a0(a0), .a1(a1), .d0(o_cos), .d1(o_sin));
+     (.c(c), .a0(a0), .a1(a1), .s0(s0), .s1(s1), .d0(o_cos), .d1(o_sin));
    initial
      begin
 	$dumpfile("dump.vcd");

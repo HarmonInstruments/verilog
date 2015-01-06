@@ -22,9 +22,9 @@
 module cosine_int
   (
    input 		   c,
-   input [NBA-1:0] 	   a,
+   input [NBA-3:0] 	   a,
+   input 		   s,
    input [NBO+NBM-2:0] 	   rom_d,
-   output [9:0] 	   rom_a,
    output signed [NBO-1:0] o
    );
 
@@ -33,61 +33,159 @@ module cosine_int
    localparam NBP = NBA-12; // bits to interpolator
    localparam NBM = NBO-10; // bits in interpolation multiply value
 
-   reg [1:0] 		   sign; // these two pipe stages are the ROM lookup
-   reg [NBP-1:0] 	   alow_0;
-   reg signed [NBP:0] 	   alow_1;
-   reg signed [NBO-1:0]    coarse_2;
+   reg [2:0] 		   sign = 0;
+   reg [NBO-2:0] 	   coarse_2 = 0;
 
-   wire [NBA-3:0] 	a_adj = a[NBA-2] ? ~ a[NBA-3:0] : a[NBA-3:0];
-
-   assign rom_a = a_adj >> NBP;
-
-   wire [NBO-1:0]     coarse_1 = (rom_d >> NBM);
-
-   dsp_wrap_cos_int
-     #(.NBA(NBP+1), .NBB(NBM+1), .NBD(NBP+NBO), .NBP(NBO), .S(NBP))
+   //dsp_wrap_cos_int
+   //  #(.NBA(NBP+1), .NBB(NBM+1), .NBD(NBP+NBO), .NBP(NBO), .S(NBP))
+   dsp48_wrap
+     #(.NBA(NBP+1),
+       .NBB(NBM+4),
+       .NBC(NBP+NBO),
+       .NBP(NBO),
+       .S(NBP),
+       .USE_DPORT("TRUE"), // just for the extra pipe stage
+       .AREG(2),
+       .BREG(1)
+       )
    dsp_i
-     (.c(c),
-      .a(alow_1),
-      .b({1'b0, rom_d[NBM-1:0]}),
-      .d({coarse_2, 1'b1, {(NBP-1){1'b0}}}),
+     (.clock(c),
+      .a({1'b0, a[NBP-1:0]}), // 5 regs to out
+      .b({4'b0, rom_d[NBM-1:0]}), // 3 regs to out
+      .c({coarse_2, 1'b1, {(NBP-1){1'b0}}}), // 2 regs to out
+      .d({(NBP+1){1'b0}}),
+      .mode({1'b0,2'd3,sign[2],1'b1}), // A+D 2 regs to out
+      .acin(30'h0),
+      .bcin(18'h0),
+      .pcin(48'h0),
       .p(o));
 
    always @ (posedge c) begin
-      sign <= {sign[0], a[NBA-1] ^ a[NBA-2]};
-      alow_0 <= a_adj[NBP-1:0];
-      alow_1 <= sign[0] ? alow_0 : 2'sd0 - $signed({1'b0, alow_0});
-      coarse_2 <= sign[1] ? 2'sd0 - $signed(coarse_1) : coarse_1;
+      sign <= {sign[1:0], ~s};
+      coarse_2 <= (rom_d >> NBM);
    end
 
 endmodule
 
-//p = d + a * c
-module dsp_wrap_cos_int
+// m = b * (a + d)
+// p = c+m or p+m
+module dsp48_wrap
   (
-   input 		   c,
+   input 		   clock,
    input signed [NBA-1:0]  a,
    input signed [NBB-1:0]  b,
-   input signed [NBD-1:0]  d,
+   input signed [NBC-1:0]  c,
+   input signed [NBA-1:0]  d, // this has two fewer pipe stages
+   // bit 0: sub in post add (C-M)
+   // bit 1: negate post add out
+   // bits 3:2, 0: P=M+0, 1: P=M+PCIN, 2: P=M+P, 3: P = M+C
+   // bit 4: sub in pre add
+   input [4:0] 		   mode,
+   input signed [29:0] 	   acin,
+   input signed [17:0] 	   bcin,
+   input signed [47:0] 	   pcin,
+   output signed [29:0]    acout,
+   output signed [17:0]    bcout,
+   output signed [47:0]    pcout,
    output signed [NBP-1:0] p);
 
-   parameter NBA = 18;
+   parameter NBA = 25; // D is same
    parameter NBB = 18;
-   parameter NBD = 48;
+   parameter NBC = 48;
    parameter NBP = 48;
-   parameter S = 0; // Shift
+   parameter S = 0;
 
-   reg signed [NBA-1:0]     a_1;
-   reg signed [NBB-1:0]     b_1;
-   reg signed [NBD-1:0]     d_2;
-   reg signed [NBA+NBB-1:0] m_2;
-   reg signed [NBP+S-1:0]   p_3;
-   always @ (posedge c) begin
-      a_1 <= a;
-      b_1 <= b;
-      d_2 <= d;
-      m_2 <= a_1 * b_1;
-      p_3 <= d_2 + m_2;
-   end
-   assign p = p_3[NBP+S-1:S];
+   parameter USE_DPORT = "FALSE"; // enabling add 1 reg to A path
+   parameter AREG = 1;
+   parameter BREG = 1; // 0 - 2
+
+   localparam SA = 25 - NBA; // D is smae
+   localparam SB = 18 - NBB;
+   localparam SC = SB + SA;
+
+
+   wire signed [47:0] 	   dsp_p;
+   assign p = dsp_p[NBP+SC+S-1:SC+S];
+
+   DSP48E1
+     #(
+       .A_INPUT("DIRECT"),   // "DIRECT" "CASCADE"
+       .B_INPUT("DIRECT"),   // "DIRECT" "CASCADE"
+       .USE_DPORT(USE_DPORT),
+       .USE_MULT("MULTIPLY"),// "MULTIPLY" "DYNAMIC" "NONE"
+       .USE_SIMD("ONE48"),   // "ONE48" "TWO24" "FOUR12"
+       // pattern detector - not used
+       .AUTORESET_PATDET("NO_RESET"), .MASK(48'h3fffffffffff),
+       .PATTERN(48'h000000000000), .SEL_MASK("MASK"),
+       .SEL_PATTERN("PATTERN"), .USE_PATTERN_DETECT("NO_PATDET"),
+       // register enables
+       .ACASCREG(1),   // pipeline stages between A/ACIN and ACOUT (0, 1 or 2)
+       .ADREG(1),      // pipeline stages for pre-adder (0 or 1)
+       .ALUMODEREG(1), // pipeline stages for ALUMODE (0 or 1)
+       .AREG(AREG),       // pipeline stages for A (0, 1 or 2)
+       .BCASCREG(1),   // pipeline stages between B/BCIN and BCOUT (0, 1 or 2)
+       .BREG(BREG),    // pipeline stages for B (0, 1 or 2)
+       .CARRYINREG(1), // this and below are 0 or 1
+       .CARRYINSELREG(1),
+       .CREG(1),
+       .DREG(1),
+       .INMODEREG(1),
+       .MREG(1),
+       .OPMODEREG(1),
+       .PREG(1))
+   DSP48E1_inst
+     (
+      // status
+      .OVERFLOW(),
+      .PATTERNDETECT(), .PATTERNBDETECT(),
+      .UNDERFLOW(),
+      // outs
+      .CARRYOUT(),
+      .P(dsp_p),
+      // control
+      .ALUMODE({2'd0, mode[1:0]}),
+      .CARRYINSEL(3'd0),
+      .CLK(clock),
+      .INMODE({1'b0,mode[4],3'b100}),
+      .OPMODE({1'b0,mode[3:2],4'b0101}),
+      // signal inputs
+      .A({{5{a[NBA-1]}},a,{SA{1'b0}}}), // 30
+      .B({b,{SB{1'b0}}}), // 18
+      .C({c,{SC{1'b0}}}), // 48
+      .CARRYIN(1'b0),
+      .D({d,{SA{1'b0}}}), // 25
+      // cascade ports
+      .ACOUT(acout),
+      .BCOUT(bcout),
+      .CARRYCASCOUT(),
+      .MULTSIGNOUT(),
+      .PCOUT(pcout),
+      .ACIN(acin),
+      .BCIN(bcin),
+      .CARRYCASCIN(1'b0),
+      .MULTSIGNIN(1'b0),
+      .PCIN(pcin),
+      // clock enables
+      .CEA1(1'b1), .CEA2(1'b1),
+      .CEAD(1'b1),
+      .CEALUMODE(1'b1),
+      .CEB1(1'b1), .CEB2(1'b1),
+      .CEC(1'b1),
+      .CECARRYIN(1'b1),
+      .CECTRL(1'b1), // opmode
+      .CED(1'b1),
+      .CEINMODE(1'b1),
+      .CEM(1'b1), .CEP(1'b1),
+      .RSTA(1'b0),
+      .RSTALLCARRYIN(1'b0),
+      .RSTALUMODE(1'b0),
+      .RSTB(1'b0),
+      .RSTC(1'b0),
+      .RSTCTRL(1'b0),
+      .RSTD(1'b0),
+      .RSTINMODE(1'b0),
+      .RSTM(1'b0),
+      .RSTP(1'b0)
+      );
+
 endmodule
