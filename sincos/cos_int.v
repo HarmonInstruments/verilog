@@ -36,8 +36,6 @@ module cosine_int
    reg [2:0] 		   sign = 0;
    reg [NBO-2:0] 	   coarse_2 = 0;
 
-   //dsp_wrap_cos_int
-   //  #(.NBA(NBP+1), .NBB(NBM+1), .NBD(NBP+NBO), .NBP(NBO), .S(NBP))
    dsp48_wrap
      #(.NBA(NBP+1),
        .NBB(NBM+4),
@@ -52,12 +50,13 @@ module cosine_int
      (.clock(c),
       .a({1'b0, a[NBP-1:0]}), // 5 regs to out
       .b({4'b0, rom_d[NBM-1:0]}), // 3 regs to out
-      .c({coarse_2, 1'b1, {(NBP-1){1'b0}}}), // 2 regs to out
+      .c({1'b0, coarse_2, 1'b1, {(NBP-1){1'b0}}}), // 2 regs to out
       .d({(NBP+1){1'b0}}),
       .mode({1'b0,2'd3,sign[2],1'b1}), // A+D 2 regs to out
       .acin(30'h0),
       .bcin(18'h0),
       .pcin(48'h0),
+      .acout(), .bcout(), .pcout(),
       .p(o));
 
    always @ (posedge c) begin
