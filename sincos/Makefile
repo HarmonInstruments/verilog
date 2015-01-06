@@ -1,5 +1,5 @@
 export TOPLEVEL_LANG = verilog
-export COCOTB=/home/dlharmon/software/cocotb
+export COCOTB=$(HOME)/software/cocotb
 export MODULE=test
 export COMPILE_ARGS=-D SIM -I../
 
