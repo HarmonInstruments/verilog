@@ -18,7 +18,7 @@
 
 `timescale 1ns / 1ps
 
-// 7 clocks
+// 5 clocks
 module cosine_dual_23 (input c,
 		       input [NBA-3:0] 	    a0, a1,
 		       input 		    s0, s1,
@@ -34,7 +34,7 @@ module cosine_dual_23 (input c,
      (.c(c), .a(a1), .rom_d(rd1), .s(s1), .o(d1));
 endmodule
 
-// 8 clocks
+// 6 clocks
 module sincos_23 (input c,
 		  input [NBA-1:0] 	  a,
 		  output signed [NBD-1:0] o_cos, o_sin);
