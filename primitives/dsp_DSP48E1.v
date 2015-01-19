@@ -23,6 +23,10 @@
 module dsp48_wrap
   (
    input 		   clock,
+   input 		   ce1,
+   input 		   ce2,
+   input 		   cem,
+   input 		   cep,
    input signed [NBA-1:0]  a,
    input signed [NBB-1:0]  b,
    input signed [NBC-1:0]  c,
@@ -42,8 +46,8 @@ module dsp48_wrap
 
    parameter NBA = 24; // D is same - really 25, but causes a warning
    parameter NBB = 18;
-   parameter NBC = 48;
    parameter NBP = 48;
+   parameter NBC = NBP;
    parameter S = 0;
 
    parameter USE_DPORT = "FALSE"; // enabling add 1 reg to A path
@@ -117,16 +121,16 @@ module dsp48_wrap
       .MULTSIGNIN(1'b0),
       .PCIN(pcin),
       // clock enables
-      .CEA1(1'b1), .CEA2(1'b1),
+      .CEA1(ce1), .CEA2(ce2),
       .CEAD(1'b1),
       .CEALUMODE(1'b1),
-      .CEB1(1'b1), .CEB2(1'b1),
+      .CEB1(ce1), .CEB2(ce2),
       .CEC(1'b1),
       .CECARRYIN(1'b1),
       .CECTRL(1'b1), // opmode
       .CED(1'b1),
       .CEINMODE(1'b1),
-      .CEM(1'b1), .CEP(1'b1),
+      .CEM(cem), .CEP(cep),
       .RSTA(1'b0),
       .RSTALLCARRYIN(1'b0),
       .RSTALUMODE(1'b0),

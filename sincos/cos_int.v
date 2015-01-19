@@ -46,6 +46,10 @@ module cosine_int
        )
    dsp_i
      (.clock(c),
+      .ce1(1'b1),
+      .ce2(1'b1),
+      .cem(1'b1),
+      .cep(1'b1),
       .a({1'b0, a[NBA-13:0]}), // 5 regs to out
       .b({4'b0, rom_d[12:0]}), // 3 regs to out
       .c({1'b0, coarse_2, {(OSHIFT){1'b0}}}), // 2 regs to out
