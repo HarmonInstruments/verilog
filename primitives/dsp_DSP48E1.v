@@ -31,8 +31,7 @@ module dsp48_wrap
    input signed [NBB-1:0]  b,
    input signed [NBC-1:0]  c,
    input signed [NBA-1:0]  d, // this has two fewer pipe stages
-   // bit 0: sub in post add (C-M)
-   // bit 1: negate post add out
+   // bit 1:0: 0: Z+X+Y 3:Z-(X+Y) 1: -Z + (X+Y) 2: -1*(Z+X+Y+1)
    // bits 3:2, 0: P=M+0, 1: P=M+PCIN, 2: P=M+P, 3: P = M+C
    // bit 4: sub in pre add
    input [4:0] 		   mode,
