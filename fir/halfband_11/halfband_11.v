@@ -38,6 +38,7 @@ module halfband_11
    reg [1:0] 		   coefa = 0;
    reg [3:0] 		   ovpipe = 0;
    wire [191:0] 	   rd; // read data from RAM
+   reg 			   r = 0;
 
    initial begin
       coefrom[0] = 1738;
@@ -50,17 +51,18 @@ module halfband_11
 		       .w(iv), .wa({5'd0,wa}), .wd(id),
 		       .r(~reset), .ra({5'd0,ra}), .rd(rd));
 
-   mac_24x18 mac_0(.c(c), .r(ov), .a(rd[ 23:  0]), .b(coef), .p(od[ 23:  0]));
-   mac_24x18 mac_1(.c(c), .r(ov), .a(rd[ 47: 24]), .b(coef), .p(od[ 47: 24]));
-   mac_24x18 mac_2(.c(c), .r(ov), .a(rd[ 71: 48]), .b(coef), .p(od[ 71: 48]));
-   mac_24x18 mac_3(.c(c), .r(ov), .a(rd[ 95: 72]), .b(coef), .p(od[ 95: 72]));
-   mac_24x18 mac_4(.c(c), .r(ov), .a(rd[119: 96]), .b(coef), .p(od[119: 96]));
-   mac_24x18 mac_5(.c(c), .r(ov), .a(rd[143:120]), .b(coef), .p(od[143:120]));
-   mac_24x18 mac_6(.c(c), .r(ov), .a(rd[167:144]), .b(coef), .p(od[167:144]));
-   mac_24x18 mac_7(.c(c), .r(ov), .a(rd[191:168]), .b(coef), .p(od[191:168]));
+   mac_24x18 mac_0(.c(c), .r(r), .a(rd[ 23:  0]), .b(coef), .p(od[ 23:  0]));
+   mac_24x18 mac_1(.c(c), .r(r), .a(rd[ 47: 24]), .b(coef), .p(od[ 47: 24]));
+   mac_24x18 mac_2(.c(c), .r(r), .a(rd[ 71: 48]), .b(coef), .p(od[ 71: 48]));
+   mac_24x18 mac_3(.c(c), .r(r), .a(rd[ 95: 72]), .b(coef), .p(od[ 95: 72]));
+   mac_24x18 mac_4(.c(c), .r(r), .a(rd[119: 96]), .b(coef), .p(od[119: 96]));
+   mac_24x18 mac_5(.c(c), .r(r), .a(rd[143:120]), .b(coef), .p(od[143:120]));
+   mac_24x18 mac_6(.c(c), .r(r), .a(rd[167:144]), .b(coef), .p(od[167:144]));
+   mac_24x18 mac_7(.c(c), .r(r), .a(rd[191:168]), .b(coef), .p(od[191:168]));
 
    always @ (posedge c) begin
       {ov,ovpipe} <= {ovpipe, (state == 7)};
+      r <= state == 3;
       wa <= wa + iv;
       ignore_next <= reset ? 1'b0 : ignore_next ^ iv;
       coef <= coefrom[coefa];
