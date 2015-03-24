@@ -1,0 +1,4 @@
+*.xml
+*~
+*.vcd
+sim_build
