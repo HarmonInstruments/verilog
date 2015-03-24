@@ -31,8 +31,10 @@ module dsp48_wrap
    input signed [NBB-1:0]  b,
    input signed [NBC-1:0]  c,
    input signed [NBA-1:0]  d, // this has two fewer pipe stages
+   // X+Y is usually the multiplier output (M)
+   // Z is either P, PCIN or C
    // bit 1:0: 0: Z+X+Y 3:Z-(X+Y) 1: -Z + (X+Y) 2: -1*(Z+X+Y+1)
-   // bits 3:2, 0: P=M+0, 1: P=M+PCIN, 2: P=M+P, 3: P = M+C
+   // bits 3:2, 0: Z=0, 1: Z=PCIN, 2: Z=P, 3: Z = C
    // bit 4: sub in pre add
    input [4:0] 		   mode,
    input signed [29:0] 	   acin,
@@ -49,11 +51,11 @@ module dsp48_wrap
    parameter NBC = NBP;
    parameter S = 0;
 
-   parameter USE_DPORT = "FALSE"; // enabling add 1 reg to A path
+   parameter USE_DPORT = "FALSE"; // enabling adds 1 reg to A path
    parameter AREG = 1;
    parameter BREG = 1; // 0 - 2
 
-   localparam SA = 24 - NBA; // D is smae
+   localparam SA = 24 - NBA; // D is same
    localparam SB = 18 - NBB;
    localparam SC = SB + SA;
 
