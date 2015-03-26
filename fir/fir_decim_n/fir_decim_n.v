@@ -24,13 +24,12 @@
 module fir_decim_n
   (
    input 	  c,
-   input 	  reset,
+   input [7:0] 	  state_ext,
    input [1:0] 	  l2n, // log2 (rate)
    input [191:0]  id, // input data
    input [17:0]   cd, // coef data
    input [7:0] 	  ca, // coef address
    input 	  cw, // coef write
-   input 	  cc, // coef clock
    output [191:0] od,
    output reg 	  ov = 0
    );
@@ -52,10 +51,10 @@ module fir_decim_n
 
    bram_192x512 bram_0(.c(c),
 		       .w(w), .wa(wa), .wd(id),
-		       .r(~reset), .ra(ra0), .rd(rd0));
+		       .r(1'b1), .ra(ra0), .rd(rd0));
    bram_192x512 bram_1(.c(c),
 		       .w(w), .wa(wa), .wd(id),
-		       .r(~reset), .ra(ra1), .rd(rd1));
+		       .r(1'b1), .ra(ra1), .rd(rd1));
 
    genvar 		   i;
    generate
@@ -89,11 +88,11 @@ module fir_decim_n
    endgenerate
 
    always @ (posedge c) begin
+      state <= state_ext & mask;
       ov <= state == 5;
       r <= state == 4;
       w <= state[3:0] == 1;
       wa <= wa + w;
-      state <= reset ? 1'b0 : (state + 1'b1) & mask;
       coefa <= state;
       ra0 <= (state == 0) ? wa - ({mask,1'b1} + 1'b1) : ra0 + 1'b1;
       ra1 <= (state == 0) ? wa - 1'b1 : ra1 - 1'b1;
@@ -117,7 +116,7 @@ module fir_decim_n
       .INJECTDBITERR(1'b0), .INJECTSBITERR(1'b0),
       .ADDRARDADDR({2'b0, coefa, 6'd0}),
       .CLKARDCLK(c),
-      .ENARDEN(~reset),
+      .ENARDEN(1'b1),
       .REGCEAREGCE(1'b1),
       .RSTRAMARSTRAM(1'b0),
       .RSTREGARSTREG(1'b0),
@@ -125,7 +124,7 @@ module fir_decim_n
       .DIADI({14'h0,cd[17:0]}),
       .DIPADIP(4'h0),
       .ADDRBWRADDR({2'b0,ca,6'd0}),
-      .CLKBWRCLK(cc),
+      .CLKBWRCLK(c),
       .ENBWREN(cw),
       .REGCEB(1'b1),
       .RSTRAMB(1'b0),

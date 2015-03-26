@@ -12,7 +12,7 @@ XMACRO = $(VIVADO)/ids_lite/ISE/verilog/src/unimacro
 SOURCES_7SERIES = ../../primitives/dsp_DSP48E1.v
 SOURCES = $(SOURCES_COMMON) $(SOURCES_7SERIES)
 
-export VERILOG_SOURCES=$(SOURCES:%.v=../%.v) $(XPRIMS)/DSP48E1.v $(XPRIMS)/RAMB36E1.v $(XPRIMS)/RAMB18E1.v
+export VERILOG_SOURCES=$(SOURCES:%.v=../%.v) $(XPRIMS)/DSP48E1.v $(XPRIMS)/RAMB36E1.v
 
 all: test
 

@@ -36,10 +36,7 @@ def impulse(dut):
     vals[255:511] = 2**18 * np.ones(256, dtype=int)
     for val in vals:
         dut.id = val
-        dut.iv = 1
-        yield RisingEdge(dut.c)
-        dut.iv = 0
-        for i in range(15):
+        for i in range(16):
             yield RisingEdge(dut.c)
 
 @cocotb.coroutine
@@ -48,7 +45,7 @@ def load_coefs(dut, vals):
     for i in range(len(vals)):
         dut.ca = i
         dut.cd = vals[i]
-        yield RisingEdge(dut.cc)
+        yield RisingEdge(dut.c)
     dut.cw = 0
 
 @cocotb.test()
@@ -57,11 +54,8 @@ def run_test(dut):
     dut.id = 0
     dut.cw = 0
     dut.l2n = 0
-    dut.iv = 0
-    dut.reset = 1
+    dut.state_ext = 0
     a = cocotb.fork(Clock(dut.c, 2500).start())
-    cocotb.fork(Clock(dut.cc, 5000).start())
-    yield RisingEdge(dut.c)
     yield RisingEdge(dut.c)
     #f2 = np.array([-2, -5, 10, 16, -29, -42, 68, 93, -141, -185,
     #               266, 338, -466, -580, 772, 946,-1224,  -1480,   1874,   2246,
@@ -71,11 +65,10 @@ def run_test(dut):
     print np.sum(f2)
     #f2 = np.ones(32, dtype=int) * 2**12
     yield load_coefs(dut, f2)
-    dut.reset = 0
     cocotb.fork(impulse(dut))
 
-
     for i in range(8192):
+        dut.state_ext = i & 0x1FF
         yield RisingEdge(dut.c)
         if dut.ov.value.integer == 1:
             v = dut.od.value.integer
