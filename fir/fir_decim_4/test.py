@@ -25,40 +25,41 @@ from cocotb.clock import Clock
 from cocotb.triggers import Timer, RisingEdge, ReadOnly, Event
 from cocotb.result import TestFailure, ReturnValue
 
+# extract 4 signed 18 bit values from 72 bits
+def extract18s(v):
+    d = np.zeros(4, dtype = int)
+    for i in range(4):
+        d[i] = 0x3FFFF & (v >> (18*i))
+        if d[i] > (2**17-1):
+            d[i] = -1* (2**18 - d[i])
+    return d
+
 @cocotb.coroutine
 def impulse(dut):
-    vals = 100 * np.arange(1024, dtype=int)
-    vals[0:256] = np.zeros(256, dtype=int)
-    vals[0] = 2**19
-    vals[65] = 2**19
-    vals[130] = 2**19
-    vals[195] = 2**19
-    vals[256:512] = 9999 * np.ones(256, dtype=int)
+    vals = np.arange(1024, dtype=int)
+    vals[512:768] = np.zeros(256, dtype=int)
+    vals[512+64] = 32767
+    vals[512+64+65] = 32767
+    vals[512+128+66] = 32767
+    vals[256:512] = 32767 * np.ones(256, dtype=int)
     for val in vals:
-        dut.id = val
-        dut.iv = 1
-        yield RisingEdge(dut.c)
-        dut.iv = 0
-        for i in range(3):
+        for i in range(4):
+            dut.id = val*(i+1)
             yield RisingEdge(dut.c)
 
 @cocotb.test()
 def run_test(dut):
     """Test complex multiplier"""
     dut.id = 0
-    dut.iv = 0
-    dut.reset = 1
+    dut.sel = 0
+    dut.state = 0
     a = cocotb.fork(Clock(dut.c, 2500).start())
     yield RisingEdge(dut.c)
     yield RisingEdge(dut.c)
-    dut.reset = 0
     cocotb.fork(impulse(dut))
-
     for i in range(4096):
+        dut.state = i & 0xFF
         yield RisingEdge(dut.c)
-        #dut.iv = 1 if i%4 == 0 else 0
         if dut.ov.value.integer == 1:
             v = dut.od.value.integer
-            if v > (2**23-1):
-                v = -1* (2**24 - v)
-            print 'hit', v
+            print 'hit', extract18s(v)
