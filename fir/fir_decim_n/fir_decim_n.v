@@ -58,32 +58,25 @@ module fir_decim_n
 
    genvar 		   i;
    generate
-      for (i = 0; i < 8; i = i+1) begin: maci
-	 dsp48_wrap #(.NBA(24),
-		      .NBB(18),
-		      .NBP(24),
-		      .S(18),
-		      .AREG(1),
-		      .BREG(2),
-		      .USE_DPORT("TRUE")) macn
-	       (
-	        .clock(c),
-	        .ce1(1'b1),
-	        .ce2(1'b1),
-	        .cem(1'b1),
-	        .cep(1'b1),
-	        .a(rd0[23+24*i:24*i]),
-	        .b(coef[17:0]),
-	        .c(24'd131072), // convergent rounding
-	        .d(rd1[23+24*i:24*i]),
-	        .mode(r ? 5'b01100 : 5'b01000),
-	        .acin(30'h0),
-	        .bcin(18'h0),
-	        .pcin(48'h0),
-	        .acout(),
-	        .bcout(),
-	        .pcout(),
-	        .p(od[23+24*i:24*i]));
+      for (i = 0; i < 8; i = i+1) begin: mac
+	 wire [29:0] dsp_o;
+	 assign od[23+24*i:24*i] = dsp_o[23:0];
+	 dsp48_wrap_f #(.S(18), .AREG(1), .BREG(2), .USE_DPORT("TRUE")) maci
+	   (
+	    .clock(c),
+	    .ce1(1'b1),
+	    .ce2(1'b1),
+	    .cem(1'b1),
+	    .cep(1'b1),
+	    .a({rd0[23+24*i],rd0[23+24*i:24*i]}),
+	    .b(coef[17:0]),
+	    .c(48'd131072), // convergent rounding
+	    .d({rd1[23+24*i],rd1[23+24*i:24*i]}),
+	    .mode(r ? 5'b01100 : 5'b01000),
+	    .pcin(48'h0),
+	    .pcout(),
+	    .p(dsp_o));
+
       end
    endgenerate
 
