@@ -37,6 +37,7 @@ module fir_decim_4
    reg [3:0] 	      coefa = 0;
    wire [143:0]       rd; // read data from RAM
    reg 		      r = 0;
+   reg [4:0] 	      s = 0;
 
    genvar 	      i;
    generate
@@ -73,12 +74,13 @@ module fir_decim_4
    endgenerate
 
    always @ (posedge c) begin
-      ov <= state[3:0] == 5;
-      r <= state[3:0] == 4;
+      s <= {s[3:0], (state[3:0] == 15)};
+      ov <= r;
+      r <= s[4];
       coef <= coefrom[{sel,coefa}];
       coefa <= state[3:0] - 1'b1;
-      ra0 <= (state[3:0] == 0) ? state[7:2] - 1'b1: ra0 - 1'b1;
-      ra1 <= (state[3:0] == 0) ? state[7:2] - 6'd32 : ra1 + 1'b1;
+      ra0 <= s[0] ? state[7:2] - 1'b1: ra0 - 1'b1;
+      ra1 <= s[0] ? state[7:2] - 6'd32 : ra1 + 1'b1;
    end
 
    generate
