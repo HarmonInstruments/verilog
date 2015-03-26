@@ -43,6 +43,7 @@ module fir_decim_n
    wire [71:0] 	  rd0, rd1; // read data from RAM
    reg 		  r = 0;
    reg 		  w = 0;
+   reg [4:0] 	  s = 0; // state is 0 when bit 0, ...
    wire [7:0] 	  mask;
    assign mask[7] = (l2n > 2);
    assign mask[6] = (l2n > 1);
@@ -81,13 +82,14 @@ module fir_decim_n
 
    always @ (posedge c) begin
       state <= state_ext & mask;
-      ov <= state == 5;
-      r <= state == 4;
+      ov <= r;
+      r <= s[4];
       w <= state[3:0] == 1;
       wa <= wa + w;
       coefa <= state;
-      ra0 <= (state == 0) ? wa - ({mask,1'b1} + 1'b1) : ra0 + 1'b1;
-      ra1 <= (state == 0) ? wa - 1'b1 : ra1 - 1'b1;
+      s <= {s[3:0],(state == mask)};
+      ra0 <= s[0] ? wa - ({mask,1'b1} + 1'b1) : ra0 + 1'b1;
+      ra1 <= s[0] ? wa - 1'b1 : ra1 - 1'b1;
    end
 
    bram_72x512 bram_c(.c(c),
