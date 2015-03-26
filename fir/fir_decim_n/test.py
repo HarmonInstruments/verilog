@@ -71,7 +71,7 @@ def run_test(dut):
         dut.state_ext = i & 0x1FF
         yield RisingEdge(dut.c)
         if dut.ov.value.integer == 1:
-            v = dut.od.value.integer
+            v = dut.od.value.integer & 0xFFFFFF
             if v > (2**23-1):
                 v = -1* (2**24 - v)
             print 'hit', v

@@ -69,7 +69,7 @@ module fir_decim_n
 	    .cem(1'b1),
 	    .cep(1'b1),
 	    .a({rd0[17+18*i], rd0[17+18*i:18*i], 6'd0}),
-	    .b(coef[17:0]),
+	    .b(coef[18*i+17:18*i]),
 	    .c(48'd131072), // convergent rounding
 	    .d({rd1[17+18*i], rd1[17+18*i:18*i], 6'd0}),
 	    .mode(r ? 5'b01100 : 5'b01000),
@@ -90,40 +90,9 @@ module fir_decim_n
       ra1 <= (state == 0) ? wa - 1'b1 : ra1 - 1'b1;
    end
 
-   RAMB36E1 #(
-	      .DOA_REG(1), .DOB_REG(1),
-	      .RAM_MODE("SDP"),
-	      .READ_WIDTH_A(72), .READ_WIDTH_B(0),
-	      .WRITE_WIDTH_A(0), .WRITE_WIDTH_B(72),
-	      .SIM_DEVICE("7SERIES"))
-   bram_coefs
-     (
-      .CASCADEOUTA(), .CASCADEOUTB(),
-      .DBITERR(), .ECCPARITY(), .RDADDRECC(), .SBITERR(),
-      .DOADO(coef[31:0]),
-      .DOPADOP(coef[67:64]),
-      .DOBDO(coef[63:32]),
-      .DOPBDOP(coef[71:68]),
-      .CASCADEINA(1'b0), .CASCADEINB(1'b0),
-      .INJECTDBITERR(1'b0), .INJECTSBITERR(1'b0),
-      .ADDRARDADDR({2'b0, coefa, 6'd0}),
-      .CLKARDCLK(c),
-      .ENARDEN(1'b1),
-      .REGCEAREGCE(1'b1),
-      .RSTRAMARSTRAM(1'b0),
-      .RSTREGARSTREG(1'b0),
-      .WEA(4'b0),
-      .DIADI({14'h0,cd[17:0]}),
-      .DIPADIP(4'h0),
-      .ADDRBWRADDR({2'b0,ca,6'd0}),
-      .CLKBWRCLK(c),
-      .ENBWREN(cw),
-      .REGCEB(1'b1),
-      .RSTRAMB(1'b0),
-      .RSTREGB(1'b0),
-      .WEBWE(8'hFF),
-      .DIBDI(32'h0),
-      .DIPBDIP(4'h0));
+   bram_72x512 bram_c(.c(c),
+		      .w(cw), .wa({1'b0,ca}), .wd({cd,cd,cd,cd}),
+		      .r(1'b1), .ra({1'b0,coefa}), .rd(coef));
 
    initial
      begin
