@@ -29,11 +29,11 @@ from cocotb.result import TestFailure, ReturnValue
 def impulse(dut):
     vals = 100 * np.arange(1024, dtype=int)
     vals[0:512] = np.zeros(512, dtype=int)
-    vals[1] = 2**18
-    vals[130] = 2**18
+    vals[1] = 131071
+    vals[130] = 65536
     #vals[259] = 2**18
     #vals[388] = 2**18
-    vals[255:511] = 2**18 * np.ones(256, dtype=int)
+    vals[255:511] = 131071 * np.ones(256, dtype=int)
     for val in vals:
         dut.id = val
         for i in range(16):
@@ -57,11 +57,11 @@ def run_test(dut):
     dut.state_ext = 0
     a = cocotb.fork(Clock(dut.c, 2500).start())
     yield RisingEdge(dut.c)
-    #f2 = np.array([-2, -5, 10, 16, -29, -42, 68, 93, -141, -185,
-    #               266, 338, -466, -580, 772, 946,-1224,  -1480,   1874,   2246,
-    #               -2800,  -3342,   4131,   4947,  -6121,  -7448,   9391,  11918, -15993, -22898,
-    #               38984, 117827])
-    f2 = 1 + np.arange(32)
+    f2 = np.array([-2, -5, 10, 16, -29, -42, 68, 93, -141, -185,
+                   266, 338, -466, -580, 772, 946,-1224,  -1480,   1874,   2246,
+                   -2800,  -3342,   4131,   4947,  -6121,  -7448,   9391,  11918, -15993, -22898,
+                   38984, 117827])
+    #f2 = 1 + np.arange(32)
     print np.sum(f2)
     #f2 = np.ones(32, dtype=int) * 2**12
     yield load_coefs(dut, f2)
