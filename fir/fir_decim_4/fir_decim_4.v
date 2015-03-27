@@ -32,7 +32,6 @@ module fir_decim_4
 
    wire signed [17:0] coef;
    wire [5:0] 	      ra0, ra1;
-   wire [3:0] 	      coefa;
    wire 	      r;
    wire [4:0] 	      s;
 
