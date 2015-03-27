@@ -31,24 +31,111 @@ module fir_decim_n
    input [7:0] 	 ca, // coef address
    input 	 cw, // coef write
    output [95:0] od,
-   output reg 	 ov = 0
+   output 	 ov
    );
 
    wire [71:0] 	  coef;
-   reg [8:0] 	  wa = 0;
-   reg [8:0] 	  ra0 = 0;
-   reg [8:0] 	  ra1 = 0;
-   reg [7:0] 	  state = 0;
+   wire [8:0] 	  wa, ra0, ra1;
+   wire [7:0] 	  state;
+   wire 	  r, w;
+   wire [6:0] 	  s; // state is 0 when bit 0, ...
+
+   fir_decim_n_common common
+     (.c(c),
+      .state_ext(state_ext),
+      .l2n(l2n),
+      .cd(cd),
+      .ca(ca),
+      .cw(cw),
+      .ov(ov),
+      .wa(wa),
+      .ra0(ra0),
+      .ra1(ra1),
+      .state(state),
+      .w(w),
+      .s(s),
+      .coef(coef));
+
+   fir_decim_n_channel channel
+     (.c(c),
+      .id(id),
+      .od(od),
+      .wa(wa),
+      .ra0(ra0),
+      .ra1(ra1),
+      .state(state),
+      .w(w),
+      .s(s),
+      .coef(coef[17:0]));
+
+   initial
+     begin
+	$dumpfile("dump.vcd");
+	$dumpvars(0);
+     end
+
+endmodule
+
+// common logic for multi channel
+module fir_decim_n_common
+  (
+   input 	    c,
+   input [7:0] 	    state_ext,
+   input [1:0] 	    l2n, // log2 (rate)
+   input [17:0]     cd, // coef data
+   input [7:0] 	    ca, // coef address
+   input 	    cw, // coef write
+   output 	    ov,
+   output reg [8:0] wa = 0,
+   output reg [8:0] ra0 = 0,
+   output reg [8:0] ra1 = 0,
+   output reg [7:0] state = 0,
+   output reg 	    w = 0,
+   output reg [6:0] s = 0, // state is 0 when bit 0, ...
+   output [71:0]    coef
+   );
+
    reg [7:0] 	  coefa = 0;
-   wire [71:0] 	  rd0, rd1; // read data from RAM
-   reg 		  r = 0;
-   reg 		  w = 0;
-   reg [4:0] 	  s = 0; // state is 0 when bit 0, ...
    wire [7:0] 	  mask;
    assign mask[7] = (l2n > 2);
    assign mask[6] = (l2n > 1);
    assign mask[5] = (l2n > 0);
    assign mask[4:0] = 5'h1F;
+   assign ov = s[6];
+
+   always @ (posedge c) begin
+      state <= state_ext & mask;
+      w <= state[3:0] == 1;
+      wa <= wa + w;
+      coefa <= state;
+      s <= {s[5:0],(state == mask)};
+      ra0 <= s[0] ? wa - ({mask,1'b1} + 1'b1) : ra0 + 1'b1;
+      ra1 <= s[0] ? wa - 1'b1 : ra1 - 1'b1;
+   end
+
+   bram_72x512 bram_c(.c(c),
+		      .w(cw), .wa({1'b0,ca}), .wd({cd,cd,cd,cd}),
+		      .r(1'b1), .ra({1'b0,coefa}), .rd(coef));
+
+endmodule
+
+// 4 channel filter, decimate by 2 to 16
+// number of taps is 32*decim rate
+// clock is 16 * FS in
+module fir_decim_n_channel
+  (
+   input 	 c,
+   input [71:0]  id, // input data
+   output [95:0] od,
+   input [8:0] 	 wa, ra0, ra1,
+   input [7:0] 	 state,
+   input 	 w,
+   input [6:0] 	 s,
+   input [17:0]  coef
+   );
+
+   wire [71:0] 	 rd0, rd1; // read data from RAM
+   wire 	 r = s[5];
 
    bram_72x512 bram_0(.c(c),
 		      .w(w), .wa(wa), .wd(id),
@@ -57,7 +144,7 @@ module fir_decim_n
 		      .w(w), .wa(wa), .wd(id),
 		      .r(1'b1), .ra(ra1), .rd(rd1));
 
-   genvar 		   i;
+   genvar 	 i;
    generate
       for (i = 0; i < 4; i = i+1) begin: mac
 	 wire [29:0] dsp_o;
@@ -70,7 +157,7 @@ module fir_decim_n
 	    .cem(1'b1),
 	    .cep(1'b1),
 	    .a({rd0[17+18*i], rd0[17+18*i:18*i], 6'd0}),
-	    .b(coef[18*i+17:18*i]),
+	    .b(coef),
 	    .c(48'd131072), // convergent rounding
 	    .d({rd1[17+18*i], rd1[17+18*i:18*i], 6'd0}),
 	    .mode(r ? 5'b01100 : 5'b01000),
@@ -79,28 +166,6 @@ module fir_decim_n
 	    .p(dsp_o));
       end
    endgenerate
-
-   always @ (posedge c) begin
-      state <= state_ext & mask;
-      ov <= r;
-      r <= s[4];
-      w <= state[3:0] == 1;
-      wa <= wa + w;
-      coefa <= state;
-      s <= {s[3:0],(state == mask)};
-      ra0 <= s[0] ? wa - ({mask,1'b1} + 1'b1) : ra0 + 1'b1;
-      ra1 <= s[0] ? wa - 1'b1 : ra1 - 1'b1;
-   end
-
-   bram_72x512 bram_c(.c(c),
-		      .w(cw), .wa({1'b0,ca}), .wd({cd,cd,cd,cd}),
-		      .r(1'b1), .ra({1'b0,coefa}), .rd(coef));
-
-   initial
-     begin
-	$dumpfile("dump.vcd");
-	$dumpvars(0);
-     end
 
 endmodule
 
