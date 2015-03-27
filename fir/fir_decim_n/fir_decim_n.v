@@ -34,7 +34,7 @@ module fir_decim_n
    output 	 ov
    );
 
-   wire [71:0] 	  coef;
+   wire [17:0] 	 coef;
    wire [8:0] 	  wa, ra0, ra1;
    wire [7:0] 	  state;
    wire 	  r, w;
@@ -66,7 +66,7 @@ module fir_decim_n
       .state(state),
       .w(w),
       .s(s),
-      .coef(coef[17:0]));
+      .coef(coef));
 
    initial
      begin
@@ -92,10 +92,11 @@ module fir_decim_n_common
    output reg [7:0] state = 0,
    output reg 	    w = 0,
    output reg [6:0] s = 0, // state is 0 when bit 0, ...
-   output [71:0]    coef
+   output reg [17:0] coef = 0
    );
 
-   reg [7:0] 	  coefa = 0;
+   wire [71:0] 	    coef_p;
+
    wire [7:0] 	  mask;
    assign mask[7] = (l2n > 2);
    assign mask[6] = (l2n > 1);
@@ -104,18 +105,18 @@ module fir_decim_n_common
    assign ov = s[6];
 
    always @ (posedge c) begin
+      coef <= coef_p[17:0];
       state <= state_ext & mask;
       w <= state[3:0] == 1;
       wa <= wa + w;
-      coefa <= state;
       s <= {s[5:0],(state == mask)};
       ra0 <= s[0] ? wa - ({mask,1'b1} + 1'b1) : ra0 + 1'b1;
       ra1 <= s[0] ? wa - 1'b1 : ra1 - 1'b1;
    end
 
    bram_72x512 bram_c(.c(c),
-		      .w(cw), .wa({1'b0,ca}), .wd({cd,cd,cd,cd}),
-		      .r(1'b1), .ra({1'b0,coefa}), .rd(coef));
+		      .w(cw), .wa({1'b0,ca}), .wd({54'h0,cd}),
+		      .r(1'b1), .ra({1'b0,state}), .rd(coef_p));
 
 endmodule
 
