@@ -148,34 +148,26 @@ module fir_decim_4_channel
    genvar 	      i;
    generate
       for (i = 0; i < 4; i = i+1) begin: maci
-	 wire [36:0] dsp_o;
-	 assign od[17+18*i:18*i] = dsp_o[36:19];
-	 wire [17:0] po = dsp_o[36:19];
-	 dsp48_wrap #(.NBA(18),
-		      .NBB(18),
-		      .NBP(37),
-		      .S(0),
-		      .AREG(1),
-		      .BREG(2),
-		      .USE_DPORT("TRUE")) macn
-	       (
-	        .clock(c),
-	        .ce1(1'b1),
-	        .ce2(1'b1),
-	        .cem(1'b1),
-	        .cep(1'b1),
-	        .a(rd[17+18*i:18*i]),
-	        .b(coef),
-	        .c(19'd262144), // convergent rounding
-	        .d(rd[72+17+18*i:72+18*i]),
-	        .mode(r ? 5'b01100 : 5'b01000),
-	        .acin(30'h0),
-	        .bcin(18'h0),
-	        .pcin(48'h0),
-	        .acout(),
-	        .bcout(),
-	        .pcout(),
-	        .p(dsp_o));
+	 wire [22:0] dsp_o;
+	 assign od[17+18*i:18*i] = dsp_o[17:0];
+	 dsp48_wrap_f #(.S(25),
+			.AREG(1),
+			.BREG(2),
+			.USE_DPORT("TRUE")) macn
+	   (
+	    .clock(c),
+	    .ce1(1'b1),
+	    .ce2(1'b1),
+	    .cem(1'b1),
+	    .cep(1'b1),
+	    .a({rd[17+18*i], rd[17+18*i:18*i], 6'd0}),
+	    .b(coef),
+	    .c(19'd262144), // convergent rounding
+	    .d({rd[72+17+18*i], rd[72+17+18*i:72+18*i], 6'd0}),
+	    .mode(r ? 5'b01100 : 5'b01000),
+	    .pcin(48'h0),
+	    .pcout(),
+	    .p(dsp_o));
       end
    endgenerate
 
