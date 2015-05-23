@@ -36,12 +36,12 @@ module lvds_tx(input c, output op, on, input v, input [31:0] d);
      end
 endmodule
 
-module lvds_rx(input c, ip, in, output reg [55:0] d=0, output reg v=0);
+module lvds_rx(input c, ip, in, output reg [39:0] d=0, output reg v=0);
    parameter INV = 0;
    wire [1:0] 	 id;
    reg [1:0] 	 id_buf;
    reg [4:0] 	 state = 0;
-   reg [57:0] 	 sr = ~58'h0;
+   reg [41:0] 	 sr = ~42'h0;
    reg 		 vp = 0;
 
    iddr_lvds iddr_lvds_i(.c(c), .o(id), .ip(ip), .in(in));
@@ -49,11 +49,11 @@ module lvds_rx(input c, ip, in, output reg [55:0] d=0, output reg v=0);
    always @ (posedge c)
      begin
 	id_buf <= INV ? ~id : id;
-	sr <= {sr[55:0], id_buf};
+	sr <= {sr[39:0], id_buf};
 	state <= state == 0 ? (id_buf != 3) : state + 1'b1;
-	vp <= (state == 28);
+	vp <= (state == 20);
 	if(vp)
-	  d <= sr[57] ? sr[55:0] : sr[56:1];
+	  d <= sr[41] ? sr[39:0] : sr[40:1];
 	v <= vp;
      end
 endmodule
@@ -64,7 +64,7 @@ module lvds_io
    input 	     sdip, sdin,
    output 	     sdop, sdon,
    output reg 	     wvalid = 0,
-   output reg [55:0] wdata,
+   output reg [39:0] wdata,
    input [31:0]      rdata
    );
    parameter TINV = 1'b0;
@@ -72,7 +72,7 @@ module lvds_io
 
    wire 	    rv;
    reg 		    tv = 0;
-   wire [55:0] 	    rd;
+   wire [39:0] 	    rd;
    reg [31:0] 	    td;
    wire 	    rv_100;
    reg 		    rv_100_d = 0;
@@ -86,8 +86,8 @@ module lvds_io
      begin
 	if(tmatch)
 	  begin
-	     if(rd[55:48] == 0) // calibration
-	       td <= rd[40] ? rd[31:0] : 32'h080FF010;
+	     if(rd[39:32] == 0) // calibration
+	       td <= rd[24] ? rd[31:0] : 32'h080FF010;
 	     else
 	       td <= rdata;
 	  end
