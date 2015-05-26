@@ -6,10 +6,10 @@ export TOPLEVEL=fir_decim_n
 
 CLEANTB = cd testbench; rm -rf *~ *.vcd *.xml sim_build
 SOURCES_COMMON = fir_decim_n.v
-VIVADO = $(HOME)/software/Xilinx/Vivado/2014.4
+VIVADO = $(HOME)/software/Xilinx/Vivado/2015.1
 XPRIMS = $(VIVADO)/ids_lite/ISE/verilog/xeclib/unisims
 XMACRO = $(VIVADO)/ids_lite/ISE/verilog/src/unimacro
-SOURCES_7SERIES = ../../primitives/dsp_DSP48E1.v
+SOURCES_7SERIES = ../../primitives/dsp_DSP48E1.v ../../primitives/bram_72x512.v
 SOURCES = $(SOURCES_COMMON) $(SOURCES_7SERIES)
 
 export VERILOG_SOURCES=$(SOURCES:%.v=../%.v) $(XPRIMS)/DSP48E1.v $(XPRIMS)/RAMB36E1.v

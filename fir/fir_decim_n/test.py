@@ -42,9 +42,11 @@ def impulse(dut):
 @cocotb.coroutine
 def load_coefs(dut, vals):
     dut.cw = 1
+    l2n = 0
+    dut.cd = 0x40000 | l2n
+    yield RisingEdge(dut.c)
     for i in range(len(vals)):
-        dut.ca = i
-        dut.cd = vals[i]
+        dut.cd = (vals[i] & 0x3FFFF) | i << 24
         yield RisingEdge(dut.c)
     dut.cw = 0
 
