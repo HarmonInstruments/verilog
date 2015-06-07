@@ -21,13 +21,14 @@
 // FIR filter, decimate by 2 to 16
 // number of taps is 32*decim rate
 // clock is 8 * FS in
+// output is 2 channels at a time
 module fir_decim_n
   (
-   input 		    c,
-   input [N_CH*18-1:0] 	    id, // input data
-   input [1:0] 		    sel, // 0: decim 2, 1: decim 4, 2: decim 8, 3: decim 16
-   output reg [N_CH*24-1:0] od, // gain is 8 * (2^sel)
-   output 		    ov
+   input 	       c,
+   input [N_CH*18-1:0] id, // input data
+   input [1:0] 	       sel, // 0: decim 2, 1: decim 4, 2: decim 8, 3: decim 16
+   output [47:0]       od, // gain is 8 * (2^sel)
+   output reg 	       ov = 0 // first channel output valid, additional channels on successive cycles
    );
 
    parameter N_CH = 4;
@@ -42,14 +43,24 @@ module fir_decim_n
    reg [1:0] 		l2n = 0; // log2 (rate)
 
    wire [N_CH*18-1:0] 	rd0, rd1, rd2, rd3; // read data from RAM
+   wire [N_CH*24-1:0] 	dd0, dd1; // dsp data out
+   reg [N_CH*24-1:0] 	od1;
 
    wire 		ce = 1'b1;
 
    wire [7:0] 		mask = {(sel > 2), (sel > 1), (sel > 0), 5'h1F};
 
-   assign ov = s0[6] | s1[6];
+   assign od = od1[47:0];
 
    always @ (posedge c) begin
+      if(s0[6])
+	od1 <= dd0;
+      else if(s1[6])
+	od1 <= dd1;
+      else
+	od1 <= od1[N_CH*24-1:48];
+      ov <= s0[6] | s1[6];
+
       state <= (state + 1'b1) & mask;
       w <= state[2:0] == 7;
       wa <= wa + w;
@@ -120,13 +131,8 @@ module fir_decim_n
 	    .pcout(),
 	    .p(dsp_o1));
 
-	 always @ (posedge c) begin
-	    if(s0[6])
-	      od[23+24*i:24*i] <= dsp_o0[23:0];
-	    else if(s1[6])
-	      od[23+24*i:24*i] <= dsp_o1[23:0];
-	 end
-	 wire [23:0] mon = od[23+24*i:24*i];
+	 assign dd0[23+24*i:24*i] = dsp_o0[23:0];
+	 assign dd1[23+24*i:24*i] = dsp_o1[23:0];
       end
    endgenerate
 
