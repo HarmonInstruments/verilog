@@ -41,15 +41,12 @@ module fir_decim_n
    reg [6:0] 		s0 = 0, s1 = 0; // state is 0 when bit 0, ...
    reg [1:0] 		l2n = 0; // log2 (rate)
 
-   wire [7:0] 		mask;
    wire [N_CH*18-1:0] 	rd0, rd1, rd2, rd3; // read data from RAM
 
    wire 		ce = 1'b1;
 
-   assign mask[7] = (sel[1:0] > 2);
-   assign mask[6] = (sel[1:0] > 1);
-   assign mask[5] = (sel[1:0] > 0);
-   assign mask[4:0] = 5'h1F;
+   wire [7:0] 		mask = {(sel > 2), (sel > 1), (sel > 0), 5'h1F};
+
    assign ov = s0[6] | s1[6];
 
    always @ (posedge c) begin
