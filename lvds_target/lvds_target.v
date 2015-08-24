@@ -64,6 +64,35 @@ module target_rx
    end
 endmodule
 
+module lvds_io
+  (
+   input 	 c, c2x, c2x_90,
+   input 	 r,
+   input 	 sdip, sdin,
+   output 	 sdop, sdon,
+   input 	 rinv, tinv,
+   output 	 ovalid,
+   output [65:0] odata,
+   input 	 ivalid,
+   input [65:0]  idata
+   );
+
+   target_rx rx(.c(c), .c2x(c2x), .c2x_90(c2x_90),
+	       .r(r),
+	       .ip(sdip), .in(sdin),
+	       .inv(rinv),
+	       .d(odata),
+	       .v(ovalid));
+   target_tx tx(.c(c),
+	       .c2x(c2x),
+	       .inv(tinv),
+	       .r(r),
+	       .d(idata),
+	       .v(ivalid),
+	       .op(sdop),
+	       .on(sdon));
+endmodule
+
 module lvds_target
   (
    input 	 c, c2x, c2x_90,
@@ -71,27 +100,54 @@ module lvds_target
    input 	 sdip, sdin,
    output 	 sdop, sdon,
    output 	 wvalid,
-   output [65:0] wdata,
-   input 	 rvalid,
-   input [65:0]  rdata
+   output [39:0] wdata,
+   input [31:0]  rdata
    );
 
    parameter TINV = 1'b0;
    parameter RINV = 1'b0;
 
-   target_rx r(.c(c), .c2x(c2x), .c2x_90(c2x_90),
-	       .r(reset),
-	       .ip(sdip), .in(sdin),
-	       .inv(RINV),
-	       .d(wdata),
-	       .v(wvalid));
-   target_tx t(.c(c),
-	       .c2x(c2x),
-	       .inv(TINV),
-	       .r(reset),
-	       .d(rdata),
-	       .v(rvalid),
-	       .op(sdop),
-	       .on(sdon));
+   wire [65:0] 	 wdataq;
+   assign wdata = wdataq[39:0];
+   reg [255:0] 	 sr;
+   wire 	 rvalid = sr[255];
 
+   always @ (posedge c)
+     sr <= {sr[254:0], wvalid};
+
+   lvds_io io(.c(c), .c2x(c2x), .c2x_90(c2x_90),
+	      .r(reset),
+	      .sdip(sdip), .sdin(sdin),
+	      .sdop(sdop), .sdon(sdon),
+	      .rinv(RINV), .tinv(TINV),
+	      .odata(wdataq),
+	      .ovalid(wvalid),
+	      .idata({34'h3CAFEFEED,rdata}),
+	      .ivalid(rvalid));
+endmodule
+
+module lvds_host
+  (
+   input 	 c, c2x, c2x_90,
+   input 	 r,
+   input 	 dip, din,
+   output 	 dop, don,
+   input 	 rinv, tinv,
+   input 	 wvalid,
+   input [39:0]  wdata,
+   output [31:0] rdata
+   );
+
+   wire [65:0] 	 odataq;
+   assign rdata = odataq[31:0];
+
+   lvds_io io(.c(c), .c2x(c2x), .c2x_90(c2x_90),
+	      .r(r),
+	      .sdip(dip), .sdin(din),
+	      .sdop(dop), .sdon(don),
+	      .rinv(rinv), .tinv(tinv),
+	      .odata(odataq),
+	      .ovalid(),
+	      .idata({26'h0,wdata}),
+	      .ivalid(wvalid));
 endmodule
