@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Harmon Instruments, LLC
+ * Copyright (C) 2014-2015 Harmon Instruments, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,98 +14,84 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/
  *
- *
  * LVDS remote IO
  *
  */
 
 `timescale 1ns / 1ps
 
-module lvds_tx(input c, output op, on, input v, input [31:0] d);
-   parameter INV = 0;
-   reg [1:0] 	od = 0;
-   reg [32:0] 	sr = ~33'h0;
+module target_tx(input c, c2x, inv, r, v, input [65:0] d, output op, on);
 
-   oddr_lvds oddr_lvds_i(.c(c), .i(INV ? ~od : od), .op(op), .on(on));
+   reg [66:0] sr = ~67'h0;
 
-   always @ (posedge c)
-     begin
-	sr <= v ? {1'b0, d} : {sr[30:0], 2'b11};
-	od[0] <= sr[32];
-	od[1] <= sr[31];
-     end
-endmodule
-
-module lvds_rx(input c, ip, in, output reg [39:0] d=0, output reg v=0);
-   parameter INV = 0;
-   wire [1:0] 	 id;
-   reg [1:0] 	 id_buf;
-   reg [4:0] 	 state = 0;
-   reg [41:0] 	 sr = ~42'h0;
-   reg 		 vp = 0;
-
-   iddr_lvds iddr_lvds_i(.c(c), .o(id), .ip(ip), .in(in));
+   oserdes_4x oserdes_tx
+     (.c(c2x), .cdiv(c), .t(r), .din({sr[63], sr[64], sr[65], sr[66]}), .op(op), .on(on));
 
    always @ (posedge c)
-     begin
-	id_buf <= INV ? ~id : id;
-	sr <= {sr[39:0], id_buf};
-	state <= state == 0 ? (id_buf != 3) : state + 1'b1;
-	vp <= (state == 20);
-	if(vp)
-	  d <= sr[41] ? sr[39:0] : sr[40:1];
-	v <= vp;
-     end
+     sr <= v ? {1'b0, d} : {sr[64:0], 4'hF};
 endmodule
 
-module lvds_io
+module target_rx
   (
-   input 	     clock, clock_2x,
-   input 	     sdip, sdin,
-   output 	     sdop, sdon,
-   output reg 	     wvalid = 0,
-   output reg [39:0] wdata,
-   input [31:0]      rdata
+   input 	     c, // 200 MHz
+   input 	     c2x, c2x_90, // 400 MHz, 400 MHz 90 deg
+   input 	     ip, in, // diff pair in
+   input 	     inv,
+   input 	     r, // reset
+   output reg [65:0] d,
+   output reg 	     v = 0);
+
+   wire [7:0] 	     d2;
+
+   oversample_8x oversample (.c(c2x), .c90(c2x_90), .r(r), .ip(ip), .in(in), .o(d2));
+
+   wire [3:0] 	     d3;
+   wire 	     v3;
+
+   dru dru(.c(c2x), .i(d2 ^ (inv ? 8'h55 : 8'hAA)), .d(d3), .v(v3));
+
+   reg [3:0]   d4;
+   reg 	       v4;
+   reg [61:0]  d5;
+
+   always @ (posedge c) begin
+      d4 <= d3;
+      v4 <= v3;
+      d5 <= {d5[35:0],d4};
+      if(v4)
+	d <= {d5,d4};
+      v <= v4;
+   end
+endmodule
+
+module lvds_target
+  (
+   input 	 c, c2x, c2x_90,
+   input 	 reset,
+   input 	 sdip, sdin,
+   output 	 sdop, sdon,
+   output 	 wvalid,
+   output [65:0] wdata,
+   input 	 rvalid,
+   input [65:0]  rdata
    );
+
    parameter TINV = 1'b0;
    parameter RINV = 1'b0;
 
-   wire 	    rv;
-   reg 		    tv = 0;
-   wire [39:0] 	    rd;
-   reg [31:0] 	    td;
-   wire 	    rv_100;
-   reg 		    rv_100_d = 0;
-   reg [7:0] 	    tcount = 0;
-   reg 		    tmatch = 0;
-
-   lvds_rx #(.INV(RINV)) r(.c(clock_2x), .ip(sdip), .in(sdin), .d(rd), .v(rv));
-   lvds_tx #(.INV(TINV)) t(.c(clock_2x), .op(sdop), .on(sdon), .d(td), .v(tv));
-
-   always @ (posedge clock_2x)
-     begin
-	if(tmatch)
-	  begin
-	     if(rd[39:32] == 0) // calibration
-	       td <= rd[24] ? rd[31:0] : 32'h080FF010;
-	     else
-	       td <= rdata;
-	  end
-	if(rv)
-	  tcount <= 8'd1;
-	else if(tcount != 0)
-	  tcount <= tcount + 1'b1;
-	tmatch <= tcount == 255;
-	tv <= tmatch;
-     end
-
-   always @ (posedge clock)
-     begin
-	wdata <= rd;
-	rv_100_d <= rv_100;
-	wvalid <= rv_100_d;
-     end
-
-   sync_pulse sync_rv(.ci(clock_2x), .i(rv), .co(clock), .o(rv_100));
+   target_rx r(.c(c), .c2x(c2x), .c2x_90(c2x_90),
+	       .r(reset),
+	       .ip(sdip), .in(sdin),
+	       .inv(RINV),
+	       .d(wdata),
+	       .v(wvalid));
+   target_tx t(.c(c),
+	       .c2x(c2x),
+	       .inv(TINV),
+	       .r(reset),
+	       .d(rdata),
+	       .v(rvalid),
+	       .op(sdop),
+	       .on(sdon));
 
 endmodule

@@ -48,10 +48,12 @@ module dru
    reg [28:0] 	    state = 0;
    reg 		    t = 0;
 
+   wire nzero = d0[9] && d0[7] && d0[5] && d0[3] && d0[2];
+
    always @ (posedge c) begin
       d0 <= {d0[1:0], i};
 
-      d1 <= d0[7:0];
+      d1 <= d0[8:1];
       if(~idle) begin
 	 idle <= state[25];
       end
@@ -66,11 +68,11 @@ module dru
 	   7'b1111110: s1 <= 2'd1;
 	   7'b1111111: s1 <= 2'd0;
 	 endcase
-	 idle <= d0[9] && d0[7] && d0[5] && d0[3] && d0[2];
-	 shift1 <= (d0[9:6] == 4'b1111);
+	 idle <= nzero;
+	 shift1 <= d0[9] && d0[7] && d0[6];
       end
 
-      state <= {state[27:0], ((d0[9:2] != 8'hFF) && idle)};
+      state <= {state[27:0], (~nzero && idle)};
 
       case(s1)
 	0: d2 <= {d2[0], d1[4], d1[0]};
