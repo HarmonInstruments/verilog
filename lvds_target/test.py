@@ -29,8 +29,8 @@ from cocotb.result import TestFailure, ReturnValue
 def do_input(dut, data):
     bstream = "11"*65
     for v in data:
-        print "in: {:066b}".format(v)
-        bstream += "1111110{:066b}".format(v)
+        print "in: {:018b}".format(v)
+        bstream += "11110{:018b}".format(v)
     bstream += "1111111111111"
     print bstream
     expstream = ""
@@ -54,13 +54,13 @@ def run_test(dut):
     """Test DRU"""
     dut.i = 0xFF
     a = cocotb.fork(Clock(dut.c, 2500).start())
-    din = np.arange(101, dtype=np.uint64)
-    din[0] = 0x0FFFFFFFFFFFE
-    din[1] = 0x1DEADBEEFCAFE
-    din[2] = 0x2DEADBEEFCAFE
-    din[3] = 0x0F000000000F0
-    din[4] = 0x0F000000000F0
-    din[5] = 0x0F000000000F0
+    din = np.arange(401, dtype=np.uint64)
+    din[0] = 0x1FFFE
+    din[1] = 0x1CAFE
+    din[2] = 0x2CAFE
+    din[3] = 0x0F0F0
+    din[4] = 0x0F0F0
+    din[5] = 0x0F0F0
     b = cocotb.fork(do_input(dut, din))
     #angles = np.random.random(count)
 
@@ -74,11 +74,10 @@ def run_test(dut):
             v = int(dut.d)
             rdata += "{:04b}".format(v&0xF)
             if f:
-                print "d", rdata[-66:]
-                rv[i] = int(rdata[-66:],2)
+                print "d", rdata[-18:]
+                rv[i] = int(rdata[-18:],2)
                 rdata = ""
                 break
-
 
     print "e", rdata
     rdata = ""
