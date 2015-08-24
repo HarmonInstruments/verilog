@@ -36,7 +36,8 @@ module dru
    reg [7:0] 	    d1 = 8'hFF;
    reg [1:0] 	    s1 = 0;
    reg 		    idle = 1;
-   reg 		    shift = 0;
+   reg 		    shift1 = 0;
+   reg 		    shift2 = 0;
 
    reg [2:0] 	    d2 = 0;
 
@@ -65,8 +66,8 @@ module dru
 	   7'b1111110: s1 <= 2'd1;
 	   7'b1111111: s1 <= 2'd0;
 	 endcase
-	 idle <= (d0[9:2] == 8'hFF);
-	 shift <= (d0[9:6] == 4'hF);
+	 idle <= d0[9] && d0[7] && d0[5] && d0[3] && d0[2];
+	 shift1 <= (d0[9:6] == 4'b1111);
       end
 
       state <= {state[27:0], ((d0[9:2] != 8'hFF) && idle)};
@@ -78,7 +79,9 @@ module dru
 	3: d2 <= {d2[0], d1[7], d1[3]};
       endcase
 
-      d3 <= ~shift ? d2[2:1] : d2[1:0];
+      shift2 <= shift1;
+
+      d3 <= ~shift2 ? d2[2:1] : d2[1:0];
 
       sr <= {sr[1:0], d3};
 
