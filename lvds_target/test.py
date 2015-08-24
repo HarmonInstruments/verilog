@@ -29,8 +29,8 @@ from cocotb.result import TestFailure, ReturnValue
 def do_input(dut, data):
     bstream = "11"*65
     for v in data:
-        print "in: {:050b}".format(v)
-        bstream += "1111110{:050b}".format(v)
+        print "in: {:066b}".format(v)
+        bstream += "1111110{:066b}".format(v)
     bstream += "1111111111111"
     print bstream
     expstream = ""
@@ -74,8 +74,8 @@ def run_test(dut):
             v = int(dut.d)
             rdata += "{:04b}".format(v&0xF)
             if f:
-                print "d", rdata[-50:]
-                rv[i] = int(rdata[-50:],2)
+                print "d", rdata[-66:]
+                rv[i] = int(rdata[-66:],2)
                 rdata = ""
                 break
 

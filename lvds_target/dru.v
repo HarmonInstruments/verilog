@@ -45,7 +45,7 @@ module dru
 
    reg [3:0] 	    sr = ~4'b0;
 
-   reg [28:0] 	    state = 0;
+   reg [36:0] 	    state = 0;
    reg 		    t = 0;
 
    wire nzero = d0[9] && d0[7] && d0[5] && d0[3] && d0[2];
@@ -55,7 +55,7 @@ module dru
 
       d1 <= d0[8:1];
       if(~idle) begin
-	 idle <= state[25];
+	 idle <= state[33];
       end
       else begin
 	 casex(d0[9:3])
@@ -72,7 +72,7 @@ module dru
 	 shift1 <= d0[9] && d0[7] && d0[6];
       end
 
-      state <= {state[27:0], (~nzero && idle)};
+      state <= {state[35:0], (~nzero && idle)};
 
       case(s1)
 	0: d2 <= {d2[0], d1[4], d1[0]};
@@ -92,7 +92,7 @@ module dru
       if(t)
 	d <= sr;
       if(t)
-	v <= state[27] | state[28];
+	v <= state[35] | state[36];
    end
 
    initial
