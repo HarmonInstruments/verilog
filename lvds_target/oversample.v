@@ -24,7 +24,7 @@ module oversample_4x (input c, c90, r, i, output [3:0] o);
 	       .DATA_RATE("DDR"),
 	       .DATA_WIDTH(4),
 	       .INTERFACE_TYPE("OVERSAMPLE"),
-	       .IOBDELAY("IBUF"),
+	       .IOBDELAY("IFD"),
 	       .NUM_CE(2),
 	       .OFB_USED("FALSE"),
 	       .SERDES_MODE("MASTER")
