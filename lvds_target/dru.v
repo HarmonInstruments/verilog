@@ -31,7 +31,7 @@ module dru
    output reg 	    v = 0 // last
    );
 
-   parameter NBP = 9;
+   parameter NBP = 21; // half of number of bits
 
    reg [9:0] 	    d0 = 10'h3FF;
 
