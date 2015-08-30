@@ -31,36 +31,31 @@ module dru
    output reg 	    v = 0 // last
    );
 
-   parameter NBP = 21; // half of number of bits
+   parameter NBP = 9; // half of number of bits
 
-   reg [9:0] 	    d0 = 10'h3FF;
-
+   reg [8:0] 	    d0 = 9'h1FF;
    reg [7:0] 	    d1 = 8'hFF;
    reg [1:0] 	    s1 = 0;
    reg 		    idle = 1;
    reg 		    shift1 = 0;
    reg 		    shift2 = 0;
-
    reg [2:0] 	    d2 = 0;
-
    reg [1:0] 	    d3 = 0;
-
    reg [3:0] 	    sr = ~4'b0;
 
    reg [NBP+3:0]     state = 0;
    reg 		    t = 0;
 
-   wire nzero = d0[9] && d0[7] && d0[5] && d0[3] && d0[2];
+   wire nzero = d1[0] && d0[7] && d0[5] && d0[3] && d0[2];
 
    always @ (posedge c) begin
-      d0 <= {d0[1:0], i};
-
+      d0 <= {d0[0], i};
       d1 <= d0[8:1];
       if(~idle) begin
 	 idle <= state[NBP];
       end
       else begin
-	 casex(d0[9:3])
+	 casex({d1[0],d0[8:3]})
 	   7'b0xxxxxx: s1 <= 2'd3;
 	   7'b10xxxxx: s1 <= 2'd2;
 	   7'b110xxxx: s1 <= 2'd1;
@@ -71,7 +66,7 @@ module dru
 	   7'b1111111: s1 <= 2'd0;
 	 endcase
 	 idle <= nzero;
-	 shift1 <= d0[9] && d0[7] && d0[6];
+	 shift1 <= d1[0] && d0[7] && d0[6];
       end
 
       state <= {state[NBP+3:0], (~nzero && idle)};
@@ -102,5 +97,4 @@ module dru
 	$dumpfile("dump.vcd");
 	$dumpvars(0);
      end
-
 endmodule

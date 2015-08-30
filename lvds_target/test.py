@@ -52,6 +52,8 @@ def do_input(dut, data):
 @cocotb.test()
 def run_test(dut):
     """Test DRU"""
+    dut.NBP = 9
+    print int(dut.NBP)
     dut.i = 0xFF
     a = cocotb.fork(Clock(dut.c, 2500).start())
     din = np.arange(401, dtype=np.uint64)
