@@ -25,15 +25,6 @@ from cocotb.clock import Clock
 from cocotb.triggers import Timer, RisingEdge, ReadOnly, Event
 from cocotb.result import TestFailure, ReturnValue
 
-# extract 4 signed 18 bit values from 72 bits
-def extract18s(v):
-    d = np.zeros(4, dtype = int)
-    for i in range(4):
-        d[i] = 0x3FFFF & (v >> (18*i))
-        if d[i] > (2**17-1):
-            d[i] = -1* (2**18 - d[i])
-    return d
-
 @cocotb.coroutine
 def impulse(dut):
     vals = np.arange(1024, dtype=int)
@@ -43,8 +34,8 @@ def impulse(dut):
     vals[512+128+66] = 32767
     vals[256:512] = 32767 * np.ones(256, dtype=int)
     for val in vals:
+        dut.id = val
         for i in range(4):
-            dut.id = val*(i+1)
             yield RisingEdge(dut.c)
 
 @cocotb.test()
@@ -61,5 +52,5 @@ def run_test(dut):
         dut.state = i & 0xFF
         yield RisingEdge(dut.c)
         if dut.ov.value.integer == 1:
-            v = dut.od.value.integer
-            print 'hit', extract18s(v)
+            v = dut.od.value.signed_integer
+            print 'hit', v
