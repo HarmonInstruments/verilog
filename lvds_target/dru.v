@@ -26,10 +26,10 @@
 module dru
   (
    input 	    c, // 400 MHz (half bit rate)
-   input 	    r, // reset
+   input 	    r, // reset, must assert prior to start of packet
    input [7:0] 	    i, // bit 7 is the oldest, 312.5 ps sample spacing
-   output reg [3:0] d, // data nibble
-   output reg 	    v = 0 // first valid
+   output reg [3:0] d, // output data nibble
+   output reg 	    v = 0 // asserted with first valid nibble
    );
 
    reg [8:0] 	    d0 = 9'h1FF;
@@ -40,8 +40,8 @@ module dru
    reg 		    shift2 = 0;
    reg [2:0] 	    d2 = 0;
    reg [1:0] 	    d3 = 0;
-   reg [3:0] 	    sr = ~4'b0;
-   reg [5:0] 	    state = 0;
+   reg [1:0] 	    sr = 0;
+   reg [4:0] 	    state = 0;
    reg 		    t = 0;
 
    wire nzero = d1[0] && d0[7] && d0[5] && d0[3] && d0[2];
@@ -67,7 +67,7 @@ module dru
 	 shift1 <= d1[0] && d0[7] && d0[6];
       end
 
-      state <= {state[4:0], (~nzero && idle)};
+      state <= {state[3:0], (~nzero && idle)};
 
       case(s1)
 	0: d2 <= {d2[0], d1[4], d1[0]};
@@ -80,14 +80,14 @@ module dru
 
       d3 <= ~shift2 ? d2[2:1] : d2[1:0];
 
-      sr <= {sr[1:0], d3};
+      sr <= d3;
 
-      t <= state[3] ? 1'b1 : ~t;
+      t <= state[2] ? 1'b1 : ~t;
 
       if(~t)
-	d <= sr;
+	d <= {sr, d3};
       if(~t)
-	v <= state[4] | state[5];
+	v <= state[3] | state[4];
    end
 
    initial
