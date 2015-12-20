@@ -27,12 +27,10 @@ from cocotb.result import TestFailure, ReturnValue
 
 @cocotb.coroutine
 def do_input(dut, data):
-    bstream = "11"*65
-    for v in data:
-        print "in: {:018b}".format(v)
-        bstream += "11110{:018b}".format(v)
-    bstream += "1111111111111"
-    print bstream
+    dut.i = 0xFF
+    dut.r = 1
+    print "in: {:016b}".format(data)
+    bstream = "1111000{:016b}1111".format(data)
     expstream = ""
     coff = 0
     for b in bstream:
@@ -40,51 +38,45 @@ def do_input(dut, data):
         nb = int(round(coff) + (2.0 * (random.random() - 0.5)))
         coff -= nb
         expstream += nb*b
+    print expstream
+    dut.r = 1
+    dut.i = 0xFF
+    yield RisingEdge(dut.c)
+    dut.r = 0
+    yield RisingEdge(dut.c)
     for i in range((len(expstream)/8)):
-        yield RisingEdge(dut.c)
         v = expstream[8*i:8*i+8]
         dut.i = int(v,2)
-        yield ReadOnly()
-        #result_re = int(dut.o_cos.value.signed_integer)
+        yield RisingEdge(dut.c)
     dut.i = 0xFF
     raise ReturnValue(0)
 
 @cocotb.test()
 def run_test(dut):
     """Test DRU"""
-    dut.NBP = 9
-    print int(dut.NBP)
     dut.i = 0xFF
     a = cocotb.fork(Clock(dut.c, 2500).start())
-    din = np.arange(401, dtype=np.uint64)
-    din[0] = 0x1FFFE
-    din[1] = 0x1CAFE
-    din[2] = 0x2CAFE
-    din[3] = 0x0F0F0
-    din[4] = 0x0F0F0
-    din[5] = 0x0F0F0
-    b = cocotb.fork(do_input(dut, din))
-    #angles = np.random.random(count)
-
+    din = np.arange(101, dtype=np.uint64)
+    din[0] = 0xFFFE
+    din[1] = 0xCAFE
+    din[2] = 0xCAFE
+    din[3] = 0xF0F0
+    din[4] = 0xF0F0
+    din[5] = 0xF0F0
     rdata = ""
     rv = np.zeros(len(din), dtype=np.uint64)
-    for i in range(len(rv)):
-        while True:
+    for i in range(len(din)):
+        cocotb.fork(do_input(dut, din[i]))
+        while int(dut.v) == 0:
             yield RisingEdge(dut.c)
-            yield RisingEdge(dut.c)
-            f = int(dut.v)
+        rdata = ""
+        for j in range(4):
             v = int(dut.d)
+            yield RisingEdge(dut.c)
+            yield RisingEdge(dut.c)
             rdata += "{:04b}".format(v&0xF)
-            if f:
-                print "d", rdata[-18:]
-                rv[i] = int(rdata[-18:],2)
-                rdata = ""
-                break
-
-    print "e", rdata
-    rdata = ""
-
-    for i in range(len(rv)):
+        rv[i] = int(rdata[-16:],2)
+        print "d", rv[i]
         if rv[i] != din[i]:
             print "error, ", i, rv[i], din[i]
             dut.log.error("FAIL")

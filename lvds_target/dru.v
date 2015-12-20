@@ -25,13 +25,12 @@
 
 module dru
   (
-   input 	    c, // 400 MHz
+   input 	    c, // 400 MHz (half bit rate)
+   input 	    r, // reset
    input [7:0] 	    i, // bit 7 is the oldest, 312.5 ps sample spacing
    output reg [3:0] d, // data nibble
-   output reg 	    v = 0 // last
+   output reg 	    v = 0 // first valid
    );
-
-   parameter NBP = 9; // half of number of bits
 
    reg [8:0] 	    d0 = 9'h1FF;
    reg [7:0] 	    d1 = 8'hFF;
@@ -42,8 +41,7 @@ module dru
    reg [2:0] 	    d2 = 0;
    reg [1:0] 	    d3 = 0;
    reg [3:0] 	    sr = ~4'b0;
-
-   reg [NBP+3:0]     state = 0;
+   reg [7:0] 	    state = 0;
    reg 		    t = 0;
 
    wire nzero = d1[0] && d0[7] && d0[5] && d0[3] && d0[2];
@@ -52,7 +50,7 @@ module dru
       d0 <= {d0[0], i};
       d1 <= d0[8:1];
       if(~idle) begin
-	 idle <= state[NBP];
+	 idle <= r;
       end
       else begin
 	 casex({d1[0],d0[8:3]})
@@ -69,7 +67,7 @@ module dru
 	 shift1 <= d1[0] && d0[7] && d0[6];
       end
 
-      state <= {state[NBP+3:0], (~nzero && idle)};
+      state <= {state[6:0], (~nzero && idle)};
 
       case(s1)
 	0: d2 <= {d2[0], d1[4], d1[0]};
@@ -89,7 +87,7 @@ module dru
       if(t)
 	d <= sr;
       if(t)
-	v <= state[NBP+2] | state[NBP+3];
+	v <= state[6] | state[7];
    end
 
    initial
