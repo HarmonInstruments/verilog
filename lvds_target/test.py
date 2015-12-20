@@ -30,8 +30,8 @@ def do_input(dut, data):
     dut.i = 0xFF
     dut.r = 1
     print "in: {:04x}".format(data)
-    bstream = "11110{:016b}1111".format(data)
-    expstream = "1"*random.randint(1,5)
+    bstream = "0{:016b}11".format(data)
+    expstream = "1"*random.randint(0,4)
     coff = 0
     for b in bstream:
         coff += (4.0 * 0.999)
@@ -43,8 +43,6 @@ def do_input(dut, data):
     dut.i = 0xFF
     yield RisingEdge(dut.c)
     dut.r = 0
-    yield RisingEdge(dut.c)
-    yield RisingEdge(dut.c)
     for i in range((len(expstream)/8)):
         v = expstream[8*i:8*i+8]
         dut.i = int(v,2)
