@@ -29,9 +29,9 @@ from cocotb.result import TestFailure, ReturnValue
 def do_input(dut, data):
     dut.i = 0xFF
     dut.r = 1
-    print "in: {:016b}".format(data)
-    bstream = "1111000{:016b}1111".format(data)
-    expstream = ""
+    print "in: {:04x}".format(data)
+    bstream = "11110{:016b}1111".format(data)
+    expstream = "1"*random.randint(1,5)
     coff = 0
     for b in bstream:
         coff += (4.0 * 0.999)
@@ -43,6 +43,7 @@ def do_input(dut, data):
     dut.i = 0xFF
     yield RisingEdge(dut.c)
     dut.r = 0
+    yield RisingEdge(dut.c)
     yield RisingEdge(dut.c)
     for i in range((len(expstream)/8)):
         v = expstream[8*i:8*i+8]
@@ -74,9 +75,10 @@ def run_test(dut):
             v = int(dut.d)
             yield RisingEdge(dut.c)
             yield RisingEdge(dut.c)
+            print hex(v)
             rdata += "{:04b}".format(v&0xF)
         rv[i] = int(rdata[-16:],2)
-        print "d", rv[i]
+        print "d", rv[i], din[i]
         if rv[i] != din[i]:
             print "error, ", i, rv[i], din[i]
             dut.log.error("FAIL")
