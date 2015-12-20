@@ -84,12 +84,10 @@ endmodule
 // c90 is 90 degrees phase shifted from
 // odd output bits are inverted
 // output is MSB first bit, 7 is the earliest sample taken
-module oversample_8x (input c, c90, r, ip, in, output [7:0] o);
-   wire [1:0] d0; // buffered
-   IBUFDS_DIFF_OUT #(.DIFF_TERM("TRUE")) IB(.O(d0[0]), .OB(d0[1]), .I(ip), .IB(in));
+module oversample_8x (input c, c90, r, input[1:0] i, output [7:0] o);
    wire [1:0] d1; // delayed
-   idelay_fixed #(.DVAL(0)) id0(.i(d0[0]), .o(d1[0]));
-   idelay_fixed #(.DVAL(4)) id1(.i(d0[1]), .o(d1[1]));
+   idelay_fixed #(.DVAL(0)) id0(.i(i[0]), .o(d1[0]));
+   idelay_fixed #(.DVAL(4)) id1(.i(i[1]), .o(d1[1]));
    oversample_4x os0 (.c(c), .c90(c90), .r(r), .i(d1[0]), .o({o[6], o[4], o[2], o[0]}));
    oversample_4x os1 (.c(c), .c90(c90), .r(r), .i(d1[1]), .o({o[7], o[5], o[3], o[1]}));
 endmodule
