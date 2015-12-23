@@ -18,13 +18,8 @@
 
 `timescale 1 ps / 1 ps
 
-module oserdes_4x (input c, cdiv, t, input [3:0] din, output op, on);
-
+module oserdes_4x (input c, cdiv, r, t, input [3:0] din, output o, tq);
    wire serdes_o;
-   wire tq;
-
-   OBUFTDS OBUFTDS_i(.O(op), .OB(on), .I(serdes_o), .T(tq));
-
    OSERDESE2 #(.DATA_RATE_OQ("DDR"),
 	       .DATA_RATE_TQ("DDR"),
 	       .DATA_WIDTH(4),
@@ -40,7 +35,7 @@ module oserdes_4x (input c, cdiv, t, input [3:0] din, output op, on);
    OSERDESE2_i
      (
       .OFB(),
-      .OQ(serdes_o),
+      .OQ(o),
       .SHIFTOUT1(),
       .SHIFTOUT2(),
       .TBYTEOUT(),
@@ -57,13 +52,13 @@ module oserdes_4x (input c, cdiv, t, input [3:0] din, output op, on);
       .D7(1'b0),
       .D8(1'b0),
       .OCE(1'b1),
-      .RST(t),
+      .RST(r),
       .SHIFTIN1(1'b0),
       .SHIFTIN2(1'b0),
-      .T1(1'b0),
-      .T2(1'b0),
-      .T3(1'b0),
-      .T4(1'b0),
+      .T1(t),
+      .T2(t),
+      .T3(t),
+      .T4(t),
       .TBYTEIN(1'b0),
       .TCE(1'b1)
       );
