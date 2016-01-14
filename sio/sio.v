@@ -21,87 +21,111 @@
 `timescale 1ns / 1ps
 
 `ifndef SIM
-module sio_host(input c, c2x, c2x_90, r, inout dp, dn, input wvalid, input [NBT-1:0] wdata, output [NBR-1:0] rdata);
+module sio_host(
+		input 		     c, c2x, c2x_90,
+		input 		     r, // power on reset
+		inout 		     dp, dn,
+		input 		     wvalid,
+		input [NBT-1:0]      wdata,
+		output reg [NBR-1:0] rdata);
    parameter NBR = 32;
    parameter NBT = 40;
-   wire 	 sdo, tq;
-   wire [1:0] 	 id0;
+   parameter STATE_END = ((NBR+NBT)/4) + 7;
    reg [4:0] 	 state = 0;
-   reg 		 rr;
+   wire [3:0] 	 id3;
+   wire		 iv3;
+   reg [NBR-5:0] id4;
+   wire 	 iv4;
+   reg [NBT:0] 	 sr;
 
-   IOBUFDS_DIFF_OUT_INTERMDISABLE iobuf_i
-     (.O(id0[0]), .OB(id0[1]), .IO(dp), .IOB(dn), .I(sdo), .INTERMDISABLE(1'b0), .IBUFDISABLE(1'b0), .TM(tq), .TS(tq));
-
+   sio_io_common sioc(.c(c), .c2x(c2x), .c2x_90(c2x_90),
+		      .r(r),
+		      .drureset(state == ((NBT/4)+6)), // seems to be on the edge
+		      .dp(dp), .dn(dn),
+		      .rd(id3),
+		      .rv(iv3),
+		      .t(state > ((NBT/4)+1)),
+		      .td(sr[NBT:NBT-3]));
+   sio_delay_n #(.N((NBR/4) - 1)) dlyv (.c(c), .i(iv3), .o(iv4));
    always @ (posedge c) begin
+      id4 <= {id4[NBR-9:0],id3};
+      if(iv4)
+	rdata <= {id4,id3};
       if(wvalid)
 	state <= 1'b1;
+      else if(state == STATE_END)
+	state <= 1'b0;
       else if(state != 0)
 	state <= state + 1'b1;
-      rr <= state < 12;
+      sr <= wvalid ? {1'b0, wdata} : {sr[NBT-4:0], 4'hF};
    end
-   sio_rx #(.NB(NBR)) rx(.c(c), .c2x(c2x), .c2x_90(c2x_90), .por(r), .r(rr), .i(id0), .d(rdata), .v());
-   // the 90 degree clock is used due to a routing constraint into the IO tile
-   sio_tx #(.NB(NBT)) tx(.c(c), .c2x(c2x_90), .r(r), .t(state > 11), .d(wdata), .v(wvalid), .o(sdo), .tq(tq));
 endmodule
 
-module sio_target(input c, c2x, c2x_90, r, inout dp, dn, input [NBT-1:0] rdata, output [NBR-1:0] wdata, output wvalid);
+module sio_target(
+		  input 	       c, c2x, c2x_90,
+		  input 	       r, // power on reset
+		  inout 	       dp, dn,
+		  input [NBT-1:0]      rdata,
+		  output reg [NBR-1:0] wdata,
+		  output reg 	       wvalid);
    parameter NBR = 40;
    parameter NBT = 32;
-   wire 	 sdo, tq;
+   parameter STATE_WV = (NBR/4) - 1;
+   parameter STATE_TS = (NBR/4) - 6;
+   parameter STATE_END = ((NBR+NBT)/4) + 3;
+   reg [4:0]     state = 0;
+   wire [3:0] 	 id3;
+   wire 	 iv3;
+   reg [NBR-5:0] id4;
+   reg [NBT:0] 	 sr;
+
+   sio_io_common sioc (.c(c), .c2x(c2x), .c2x_90(c2x_90),
+		       .r(r),
+		       .drureset(r || state == STATE_END),
+		       .dp(dp), .dn(dn),
+		       .rd(id3),
+		       .rv(iv3),
+		       .t(state < STATE_TS),
+		       .td(sr[NBT:NBT-3]));
+
+   always @ (posedge c) begin
+      id4 <= {id4[NBR-9:0],id3};
+      if(state == STATE_WV)
+	wdata <= {id4,id3};
+      wvalid <= (state == STATE_WV);
+      state <= (state == STATE_END) ? 1'b0 : state + (iv3 || (state != 0));
+      sr <= (state==((NBR/4)-6)) ? {1'b0, rdata} : {sr[NBT-4:0], 4'hF};
+   end
+endmodule
+
+// The IOB, serdes and DRU
+module sio_io_common(
+		     input 	      c, c2x, c2x_90, r,
+		     input 	      drureset, // reset the DRU
+		     inout 	      dp, dn, // IOB
+		     output reg [3:0] rd, // RX data, ~ 5 clocks from in
+		     output reg       rv, // RX valid - asserted on first valid nibble
+		     input 	      t, // tristate, 2 clocks to out
+		     input [3:0]      td // TX data
+		     );
+   wire 	 sdo;
    wire [1:0] 	 id0;
-   reg [3:0] 	 state = 0;
-
-   IOBUFDS_DIFF_OUT_INTERMDISABLE iobuf_i
-     (.O(id0[0]), .OB(id0[1]), .IO(dp), .IOB(dn), .I(sdo), .INTERMDISABLE(1'b0), .IBUFDISABLE(1'b0), .TM(tq), .TS(tq));
-
-   always @ (posedge c) begin
-      if(wvalid)
-	state <= 1'b1;
-      else if(state != 0)
-	state <= state + 1'b1;
-   end
-   sio_rx #(.NB(NBR)) rx(.c(c), .c2x(c2x), .c2x_90(c2x_90), .por(r), .r(state < 12), .i(id0), .d(wdata), .v(wvalid));
+   wire [7:0] 	 id1;
+   wire [3:0] 	 id2;
+   wire 	 iv2;
+   reg 		 druresetr;
    // the 90 degree clock is used due to a routing constraint into the IO tile
-   sio_tx #(.NB(NBT)) tx(.c(c), .c2x(c2x_90), .r(r), .t(state == 0), .d(rdata), .v(state == 4), .o(sdo), .tq(tq));
-endmodule
-
-module sio_rx (input c, c2x, c2x_90, // 200 MHz, 400 MHz, 400 MHz 90 deg
-	       input [1:0] 	   i,
-	       input 		   por, r, // reset
-	       output reg [NB-1:0] d,
-	       output reg 	   v = 0);
-
-   parameter NB = 32;
-   wire [7:0]	   d0;
-   reg [7:0] 	   d2;
-   wire [3:0] 	   d3;
-   wire 	   v3;
-   reg [3:0] 	   d4;
-   reg 		   v4;
-   wire 	   v4d;
-   reg [NB-5:0]    d5;
-
-   oversample_8x oversample (.c(c2x), .c90(c2x_90), .r(por), .i(i), .o(d0));
-   dru dru(.c(c2x), .r(r), .i(d0 ^ 8'hAA), .d(d3), .v(v3));
-   sio_delay_n #(.N((NB/4) - 1)) dlyv (.c(c), .i(v4), .o(v4d));
+   oserdes_4x os(.c(c2x_90), .cdiv(c), .r(r), .t(t), .din({td[0], td[1], td[2], td[3]}), .o(sdo), .tq(tq));
+   IOBUFDS_DIFF_OUT iobuf_i (.O(id0[0]), .OB(id0[1]), .IO(dp), .IOB(dn), .I(sdo), .TM(tq), .TS(tq));
+   oversample_8x oversample (.c(c2x), .c90(c2x_90), .r(r), .i(id0), .o(id1));
+   dru dru(.c(c2x), .r(druresetr), .i(id1 ^ 8'hAA), .d(id2), .v(iv2));
    always @ (posedge c) begin
-      d4 <= d3;
-      v4 <= v3;
-      d5 <= {d5[NB-9:0],d4};
-      if(v4d)
-	d <= {d5,d4};
-      v <= v4d;
+      rd <= id2;
+      rv <= iv2;
+      druresetr <= drureset;
    end
 endmodule
 
-module sio_tx(input c, c2x, r, t, v, input [NB-1:0] d, output o, tq);
-   parameter NB = 40;
-   reg [NB:0] sr;
-   wire [3:0] od = {sr[NB-3], sr[NB-2], sr[NB-1], sr[NB]};
-   oserdes_4x oserdes_tx(.c(c2x), .cdiv(c), .r(r), .t(t), .din(od), .o(o), .tq(tq));
-   always @ (posedge c)
-     sr <= v ? {1'b0, d} : {sr[NB-4:0], 4'hF};
-endmodule
 `endif //  `ifndef SIM
 
 module sio_delay_n(input c, i, output o);
