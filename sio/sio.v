@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 Harmon Instruments, LLC
+ * Copyright (C) 2014-2016 Harmon Instruments, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@ module sio_host(
    parameter NBR = 32;
    parameter NBT = 40;
    parameter STATE_END = ((NBR+NBT)/4) + 7;
+   parameter STATE_TS = (NBT/4) + 1;
+   parameter STATE_RESET = (NBT/4) + 7;
    reg [4:0] 	 state = 0;
    wire [3:0] 	 id3;
    wire		 iv3;
@@ -40,11 +42,11 @@ module sio_host(
 
    sio_io_common sioc(.c(c), .c2x(c2x), .c2x_90(c2x_90),
 		      .r(r),
-		      .drureset(state == ((NBT/4)+6)), // seems to be on the edge
+		      .drureset(state == STATE_RESET),
 		      .dp(dp), .dn(dn),
 		      .rd(id3),
 		      .rv(iv3),
-		      .t(state > ((NBT/4)+1)),
+		      .t(state > STATE_TS),
 		      .td(sr[NBT:NBT-3]));
    sio_delay_n #(.N((NBR/4) - 1)) dlyv (.c(c), .i(iv3), .o(iv4));
    always @ (posedge c) begin
@@ -66,17 +68,21 @@ module sio_target(
 		  input 	       r, // power on reset
 		  inout 	       dp, dn,
 		  input [NBT-1:0]      rdata,
-		  output reg [NBR-1:0] wdata,
+		  output reg [NBR-9:0] wdata,
+		  output reg [7:0]     addr,
 		  output reg 	       wvalid);
    parameter NBR = 40;
    parameter NBT = 32;
-   parameter STATE_WV = (NBR/4) - 1;
-   parameter STATE_TS = (NBR/4) - 6;
-   parameter STATE_END = ((NBR+NBT)/4) + 3;
-   reg [4:0]     state = 0;
+   parameter NBS = 5;
+   parameter STATE_WV = (NBR/4) - 1; // state to assert write valid
+   parameter STATE_AV = (8/4) - 1; // state to assert addr valid
+   parameter STATE_TS = (NBR/4) - 6; // state to release tristate
+   parameter STATE_TX = (NBR/4) - 4; // state to start transmission in
+   parameter STATE_END = ((NBR+NBT)/4) -0;
+   reg [NBS-1:0] state = 0;
    wire [3:0] 	 id3;
    wire 	 iv3;
-   reg [NBR-5:0] id4;
+   reg [NBR-13:0] id4;
    reg [NBT:0] 	 sr;
 
    sio_io_common sioc (.c(c), .c2x(c2x), .c2x_90(c2x_90),
@@ -89,12 +95,14 @@ module sio_target(
 		       .td(sr[NBT:NBT-3]));
 
    always @ (posedge c) begin
-      id4 <= {id4[NBR-9:0],id3};
+      id4 <= {id4[NBR-17:0],id3};
       if(state == STATE_WV)
 	wdata <= {id4,id3};
+      if(state == STATE_AV)
+	addr <= {id4[3:0],id3};
       wvalid <= (state == STATE_WV);
       state <= (state == STATE_END) ? 1'b0 : state + (iv3 || (state != 0));
-      sr <= (state==((NBR/4)-6)) ? {1'b0, rdata} : {sr[NBT-4:0], 4'hF};
+      sr <= (state== STATE_TX) ? {1'b0, rdata} : {sr[NBT-4:0], 4'hF};
    end
 endmodule
 
