@@ -30,10 +30,11 @@ module sio_host(
 		output reg [NBR-1:0] rdata);
    parameter NBR = 32;
    parameter NBT = 40;
+   parameter NBS = 5;
    parameter STATE_END = ((NBR+NBT)/4) + 7;
    parameter STATE_TS = (NBT/4) + 1;
    parameter STATE_RESET = (NBT/4) + 7;
-   reg [4:0] 	 state = 0;
+   reg [NBS-1:0] state = 0;
    wire [3:0] 	 id3;
    wire		 iv3;
    reg [NBR-5:0] id4;
@@ -63,6 +64,7 @@ module sio_host(
    end
 endmodule
 
+`ifndef HOST
 module sio_target(
 		  input 	       c, c2x, c2x_90,
 		  input 	       r, // power on reset
@@ -105,6 +107,7 @@ module sio_target(
       sr <= (state== STATE_TX) ? {1'b0, rdata} : {sr[NBT-4:0], 4'hF};
    end
 endmodule
+`endif //  `ifndef HOST
 
 // The IOB, serdes and DRU
 module sio_io_common(
