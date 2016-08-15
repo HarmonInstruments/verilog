@@ -36,6 +36,6 @@ module cosgen (input c, input [NBA-1:0] a, output signed [NBD-1:0] o);
    cosrom cosrom
      (.c(c), .a0(a0[NBA-3:NBA-12]), .a1(10'd0), .d0(rd0), .d1());
    cosine_int #(.NBA(NBA), .NBO(NBD)) cos_0
-     (.c(c), .a(a0), .rom_d(rd0), .s(s0), .o(o));
+     (.c(c), .a(a0[NBA-13:0]), .rom_d(rd0), .s(s0), .o(o));
 
 endmodule

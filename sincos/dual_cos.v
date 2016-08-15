@@ -46,8 +46,8 @@ module dual_cos (input c,
       .d0(rd0),
       .d1(rd1));
    cosine_int #(.NBA(NBA), .NBO(NBD)) cos_0
-     (.c(c), .a(a0_1), .rom_d(rd0), .s(s0), .o(o0));
+     (.c(c), .a(a0_1[NBA-13:0]), .rom_d(rd0), .s(s0), .o(o0));
    cosine_int #(.NBA(NBA), .NBO(NBD)) cos_1
-     (.c(c), .a(a1_1), .rom_d(rd1), .s(s1), .o(o1));
+     (.c(c), .a(a1_1[NBA-13:0]), .rom_d(rd1), .s(s1), .o(o1));
 
 endmodule
