@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 Harmon Instruments, LLC
+ * Copyright (C) 2014-2016 Harmon Instruments, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,13 @@
  *
  * Xilinx internal configuration access port
  *
+ * 100 MHz max
  */
 
 `timescale 1ns / 1ps
 
 module icap(input c, w, input [31:0] i);
    wire [31:0] swapped;
-   reg [31:0]  di;
-   reg [2:0]   wd;
    genvar      j;
    generate
       for(j=0; j<32; j=j+1)
@@ -31,14 +30,13 @@ module icap(input c, w, input [31:0] i);
 	   assign swapped[j] = i[31-j];
 	end
    endgenerate
-   always @ (posedge c)
-     begin
-	wd <= {wd[1:0], w};
-	if(w)
-	  di <= swapped;
-     end
+
    // Write and CE are active low, I is bit swapped
    ICAPE2 #(.ICAP_WIDTH("X32")) ICAP_i
-     (.O(), .CLK(wd[2]), .CSIB(1'b0),.I({di[7:0], di[15:8], di[23:16], di[31:24]}), .RDWRB(1'b0));
+     (.O(),
+      .CLK(c),
+      .CSIB(~w),
+      .I({swapped[7:0], swapped[15:8], swapped[23:16], swapped[31:24]}),
+      .RDWRB(1'b0));
 
 endmodule
