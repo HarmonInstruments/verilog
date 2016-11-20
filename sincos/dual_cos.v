@@ -20,34 +20,33 @@
 
 // 6 clocks
 module dual_cos (input c,
-		 input [NBA-1:0] 	 a0, a1,
+		 input [25:0] 		 a0, a1,
 		 output signed [NBD-1:0] o0, o1);
 
-   parameter NBA = 26;
    parameter NBD = 23;
 
-   reg [NBA-3:0]  a0_1 = 0;
-   reg [NBA-3:0]  a1_1 = 0;
+   reg [23:0]     a0_1 = 0;
+   reg [23:0]     a1_1 = 0;
    reg 		  s0 = 0;
    reg 		  s1 = 0;
 
    always @ (posedge c) begin
-      a0_1 <= a0[NBA-2] ? ~ a0[NBA-3:0] : a0[NBA-3:0];
-      a1_1 <= a1[NBA-2] ? ~ a1[NBA-3:0] : a1[NBA-3:0];
-      s0 <= a0[NBA-1] ^ a0[NBA-2];
-      s1 <= a1[NBA-1] ^ a1[NBA-2];
+      a0_1 <= a0[24] ? ~ a0[23:0] : a0[23:0];
+      a1_1 <= a1[24] ? ~ a1[23:0] : a1[23:0];
+      s0 <= a0[25] ^ a0[24];
+      s1 <= a1[25] ^ a1[24];
    end
 
    wire [34:0] rd0, rd1;
    cosrom cosrom
      (.c(c),
-      .a0(a0_1[NBA-3:NBA-12]),
-      .a1(a1_1[NBA-3:NBA-12]),
+      .a0(a0_1[23:14]),
+      .a1(a1_1[23:14]),
       .d0(rd0),
       .d1(rd1));
-   cosine_int #(.NBA(NBA), .NBO(NBD)) cos_0
-     (.c(c), .a(a0_1[NBA-13:0]), .rom_d(rd0), .s(s0), .o(o0));
-   cosine_int #(.NBA(NBA), .NBO(NBD)) cos_1
-     (.c(c), .a(a1_1[NBA-13:0]), .rom_d(rd1), .s(s1), .o(o1));
+   cosine_int #(.NBO(NBD)) cos_0
+     (.c(c), .a(a0_1[13:0]), .rom_d(rd0), .s(s0), .o(o0));
+   cosine_int #(.NBO(NBD)) cos_1
+     (.c(c), .a(a1_1[13:0]), .rom_d(rd1), .s(s1), .o(o1));
 
 endmodule

@@ -21,49 +21,39 @@
 module cosine_int
   (
    input 		   c,
-   input [NBA-13:0] 	   a,
+   input [13:0] 	   a,
    input 		   s,
    input [34:0] 	   rom_d,
    output signed [NBO-1:0] o
    );
 
-   parameter NBA = 22; // bits in angle in - all but 12 are interpolated
-   parameter NBO = 18; // bits in dout
-   localparam OSHIFT = NBA + 11 - NBO; // extra bits
+   parameter NBO = 23; // bits in dout
 
    reg [2:0] 		   sign = 0;
-   reg [NBO-2:0] 	   coarse_2 = 0;
+   reg [21:0] 		   coarse_2 = 0;
+   wire [47:0] 		   dsp_o;
 
-   dsp48_wrap
-     #(.NBA(NBA-11),
-       .NBB(17),
-       .NBC(NBO+OSHIFT),
-       .NBP(NBO),
-       .S(OSHIFT),
-       .USE_DPORT("TRUE"), // just for the extra pipe stage
+   dsp48_wrap_f
+     #(.USE_DPORT("TRUE"), // just for the extra pipe stage
        .AREG(2),
-       .BREG(1)
-       )
+       .BREG(1))
    dsp_i
      (.clock(c),
-      .ce1(1'b1),
-      .ce2(1'b1),
-      .cem(1'b1),
-      .cep(1'b1),
-      .a({1'b0, a}), // 5 regs to out
-      .b({4'b0, rom_d[12:0]}), // 3 regs to out
-      .c({1'b0, coarse_2, {(OSHIFT){1'b0}}}), // 2 regs to out
-      .d({(NBA-11){1'b0}}),
+      .ce1(1'b1), .ce2(1'b1), .cem(1'b1), .cep(1'b1),
+      .a({1'b0, a, 10'b0}), // 5 regs to out
+      .b({5'b0, rom_d[12:0]}), // 3 regs to out
+      .c({2'b0, coarse_2, (NBO==25) ? 24'hFFFFFF : 24'h0}), // 2 regs to out
+      .d(25'h0),
       .mode({1'b0,2'd3,sign[2],1'b1}), // A+D 2 regs to out
-      .acin(30'h0),
-      .bcin(18'h0),
       .pcin(48'h0),
-      .acout(), .bcout(), .pcout(),
-      .p(o));
+      .pcout(),
+      .p(dsp_o));
 
    always @ (posedge c) begin
       sign <= {sign[1:0], ~s};
-      coarse_2 <= rom_d[34:36-NBO];
+      coarse_2 <= rom_d[34:13];
    end
+
+   assign o = (NBO == 25) ? dsp_o[46:22] : dsp_o[23+NBO:24];
 
 endmodule

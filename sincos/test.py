@@ -42,7 +42,7 @@ def do_angle(dut, angle, dmult, amult):
 @cocotb.test()
 def run_test(dut):
     """Test complex exponential generator"""
-    nbits_a = dut.NBA.value.integer
+    nbits_a = 26
     nbits_d = dut.NBD.value.integer
     amult = 2**nbits_a/(2.0*np.pi)
     dmult = 2**(nbits_d-1)-1.0
