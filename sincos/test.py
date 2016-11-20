@@ -56,6 +56,8 @@ def run_test(dut):
     expected_mag = np.abs(expected)
     expected_angle = np.angle(expected)
     result = np.zeros(count, dtype=complex)
+    for i in range(10):
+        yield RisingEdge(dut.c)
     for i in range(count+pipestages):
         if i < count:
             v = yield do_angle(dut, angles[i], dmult, amult)
