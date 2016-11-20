@@ -50,8 +50,8 @@ def run_test(dut):
     dut.id = 0
     dut.sel = 1
     a = cocotb.fork(Clock(dut.c, 2500).start())
-    yield RisingEdge(dut.c)
-    yield RisingEdge(dut.c)
+    for i in range(2000):
+        yield RisingEdge(dut.c)
     cocotb.fork(impulse(dut))
     for i in range(4096):
         yield RisingEdge(dut.c)
