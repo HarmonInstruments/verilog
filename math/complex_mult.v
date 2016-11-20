@@ -21,19 +21,14 @@
 // 4 cycle pipe
 module complex_mult
   (
-   input 		   clock,
-   input 		   ce,
-   input signed [NBA-1:0]  a_re, a_im,
-   input signed [NBB-1:0]  b_re, b_im,
-   output signed [NBP-1:0] p_re, p_im
+   input 		clock,
+   input 		ce,
+   input signed [24:0] 	a_re, a_im,
+   input signed [17:0] 	b_re, b_im,
+   output signed [47:0] p_re, p_im
    );
 
-   parameter NBA = 24; // number of bits a, c (up to 25)
-   parameter NBB = 18; // number of bits b, d (up to 18)
-   parameter NBP = 32; // number of bits out
-   parameter S = 10; // shift of out
-
-   dual_mult_add #(.NBA(NBA), .NBB(NBB), .NBP(NBP), .S(S)) m_re
+   dual_mult_add m_re
      (
      .clock(clock),
      .ce(ce),
@@ -45,7 +40,7 @@ module complex_mult
      .p(p_re)
      );
 
-   dual_mult_add #(.NBA(NBA), .NBB(NBB), .NBP(NBP), .S(S)) m_im
+   dual_mult_add m_im
      (
      .clock(clock),
      .ce(ce),
