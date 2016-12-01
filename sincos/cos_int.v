@@ -42,7 +42,7 @@ module cosine_int
       .ce1(1'b1), .ce2(1'b1), .cem(1'b1), .cep(1'b1),
       .a({1'b0, a, 10'b0}), // 5 regs to out
       .b({5'b0, rom_d[12:0]}), // 3 regs to out
-      .c({2'b0, coarse_2, (NBO==25) ? 24'hFFFFFF : 24'h0}), // 2 regs to out
+      .c({2'b0, coarse_2, 24'hFFFFFFF}), // 2 regs to out
       .d(25'h0),
       .mode({1'b0,2'd3,sign[2],1'b1}), // A+D 2 regs to out
       .pcin(48'h0),
@@ -54,6 +54,6 @@ module cosine_int
       coarse_2 <= rom_d[34:13];
    end
 
-   assign o = (NBO == 25) ? dsp_o[46:22] : dsp_o[23+NBO:24];
+   assign o = dsp_o[46:47-NBO];
 
 endmodule
