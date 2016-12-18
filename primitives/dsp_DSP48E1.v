@@ -41,6 +41,8 @@ module dsp48_wrap_f
    output signed [47:0]   pcout,
    output signed [47-S:0] p);
 
+   parameter S = 0;
+
    parameter USE_DPORT = "FALSE"; // enabling adds 1 reg to A path
    parameter AREG = 1;
    parameter BREG = 1; // 0 - 2
