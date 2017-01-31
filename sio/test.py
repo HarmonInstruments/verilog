@@ -54,7 +54,8 @@ def do_input(dut, data):
 def run_test(dut):
     """Test DRU"""
     dut.i = 0xFF
-    a = cocotb.fork(Clock(dut.c, 2500).start())
+    cocotb.fork(Clock(dut.c, 2500).start())
+    yield RisingEdge(dut.c)
     din = np.arange(101, dtype=np.uint64)
     din[0] = 0xFFFE
     din[1] = 0xCAFE
