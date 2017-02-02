@@ -17,7 +17,6 @@
  */
 
 `timescale 1ns / 1ps
-`include "config.vh"
 
 module sync (input c, input i, output reg o);
    (* ASYNC_REG="TRUE", SHREG_EXTRACT="NO", HBLKNM="sync_reg"*) reg [1:0] sr;
