@@ -20,7 +20,7 @@
 
 `timescale 1ns / 1ps
 
-module cal_carry(input c, i, output reg [5:0] d);
+module cal_carry(input c, i, r, output reg [5:0] d, output reg [98:0] eye = 0);
 
    parameter real CDEL=0.119;
 
@@ -84,14 +84,15 @@ module cal_carry(input c, i, output reg [5:0] d);
 		  taps_past_edge <= (taps_past_edge == 7) ? 3'd7 : taps_past_edge + 1'b1;
 	       end
 	  end
+	eye <= r ? 1'b0 : eye | (rising1[99:1] ^ rising1[98:0]);
      end
 
-
+`ifdef SIM_CAL
    initial
      begin
         $dumpfile("dump.vcd");
         $dumpvars(0);
      end
-
+`endif
 
 endmodule

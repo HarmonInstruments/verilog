@@ -1,7 +1,7 @@
 export TOPLEVEL_LANG = verilog
 export COCOTB=$(HOME)/software/cocotb
 export MODULE=test
-export COMPILE_ARGS=-D SIM -I../
+export COMPILE_ARGS=-D SIM_CAL -I../
 export TOPLEVEL=cal_carry
 
 VIVADO = $(HOME)/software/Xilinx/Vivado/2016.4
