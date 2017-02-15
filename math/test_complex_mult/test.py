@@ -26,7 +26,7 @@ from cocotb.triggers import Timer, RisingEdge, ReadOnly, Event
 from cocotb.result import TestFailure, ReturnValue
 
 pipestages = 4
-count = 10
+count = 20
 
 @cocotb.coroutine
 def do_mult(dut, a_re, a_im, b_re, b_im):
@@ -36,15 +36,19 @@ def do_mult(dut, a_re, a_im, b_re, b_im):
     dut.b_re = b_re
     dut.b_im = b_im
     yield ReadOnly() # Wait until all events have executed for this timestep
-    result_re = int(dut.p_re.value.signed_integer)
-    result_im = int(dut.p_im.value.signed_integer)
+    try:
+        result_re = int(dut.p_re.value.signed_integer)
+        result_im = int(dut.p_im.value.signed_integer)
+    except:
+        result_re = -1
+        result_im = -1
     raise ReturnValue((result_re, result_im))
 
 @cocotb.test()
 def run_test(dut):
     """Test complex multiplier"""
-    nbits_a = dut.NBA.value.integer
-    nbits_b = dut.NBB.value.integer
+    nbits_a = 25
+    nbits_b = 18
     amult = 2**(nbits_a-1)-1
     bmult = 2**(nbits_b-1)-1
     print amult, bmult
@@ -59,8 +63,6 @@ def run_test(dut):
 
     p_re_expected = a_re * b_re - a_im * b_im
     p_im_expected = a_re * b_im + a_im * b_re
-    p_re_expected /= (2**dut.S.value.integer)
-    p_im_expected /= (2**dut.S.value.integer)
 
     p_re_result = np.zeros(count, dtype=int)
     p_im_result = np.zeros(count, dtype=int)

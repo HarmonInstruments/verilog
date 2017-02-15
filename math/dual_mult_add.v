@@ -25,9 +25,9 @@ module dual_mult_add
    input 		   clock,
    input 		   ce,
    input 		   sub, // 1: (a*b) - (c*d), 0: (a*b) + (c*d)
-   input signed [25:0] 	   a,
+   input signed [24:0] 	   a,
    input signed [17:0] 	   b,
-   input signed [25:0] 	   c,
+   input signed [24:0] 	   c,
    input signed [17:0] 	   d,
    output signed [47:0]    p
    );
@@ -60,8 +60,8 @@ module dual_mult_add
      .cep(1'b1),
      .a(c),
      .b(d),
-     .c(1'b0),
-     .d(1'b0),
+     .c(48'b0),
+     .d(25'b0),
      .mode({3'b001,sub,sub}),
      .pcin(pc),
      .pcout(),
