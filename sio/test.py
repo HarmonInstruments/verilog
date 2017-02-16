@@ -27,57 +27,35 @@ from cocotb.result import TestFailure, ReturnValue
 
 @cocotb.coroutine
 def do_input(dut, data):
-    dut.i = 0xFF
-    dut.r = 1
+    c = dut.clock_host_bus
+    dut.wvalid = 1
+    dut.wdata = data
     print "in: {:04x}".format(data)
-    bstream = "0{:016b}11".format(data)
-    expstream = "1"*random.randint(0,4)
-    coff = 0
-    for b in bstream:
-        coff += (4.0 * 0.999)
-        nb = int(round(coff) + (2.0 * (random.random() - 0.5)))
-        coff -= nb
-        expstream += nb*b
-    print expstream
-    dut.r = 1
-    dut.i = 0xFF
-    yield RisingEdge(dut.c)
-    dut.r = 0
-    for i in range((len(expstream)/8)):
-        v = expstream[8*i:8*i+8]
-        dut.i = int(v,2)
-        yield RisingEdge(dut.c)
-    dut.i = 0xFF
-    raise ReturnValue(0)
+    yield RisingEdge(c)
+    dut.wvalid = 0
+    for i in range(100):
+        yield RisingEdge(c)
+    print hex(int(dut.rdata))
+    raise ReturnValue(int(dut.rdata))
 
 @cocotb.test()
 def run_test(dut):
     """Test DRU"""
-    dut.i = 0xFF
-    cocotb.fork(Clock(dut.c, 2500).start())
-    yield RisingEdge(dut.c)
-    din = np.arange(101, dtype=np.uint64)
-    din[0] = 0xFFFE
-    din[1] = 0xCAFE
-    din[2] = 0xCAFE
-    din[3] = 0xF0F0
-    din[4] = 0xF0F0
-    din[5] = 0xF0F0
-    rdata = ""
-    rv = np.zeros(len(din), dtype=np.uint64)
-    for i in range(len(din)):
-        cocotb.fork(do_input(dut, din[i]))
-        while int(dut.v) == 0:
-            yield RisingEdge(dut.c)
-        rdata = ""
-        for j in range(4):
-            v = int(dut.d)
-            yield RisingEdge(dut.c)
-            yield RisingEdge(dut.c)
-            print hex(v)
-            rdata += "{:04b}".format(v&0xF)
-        rv[i] = int(rdata[-16:],2)
-        print "d", rv[i], din[i]
-        if rv[i] != din[i]:
-            print "error, ", i, rv[i], din[i]
-            dut.log.error("FAIL")
+    dut.r = 1
+    dut.wvalid = 0
+    cocotb.fork(Clock(dut.clock_host_bus, 5000).start())
+    cocotb.fork(Clock(dut.clock_host, 8000).start())
+    cocotb.fork(Clock(dut.clock_host_2x, 4000).start())
+    cocotb.fork(Clock(dut.clock_target, 8040).start())
+    cocotb.fork(Clock(dut.clock_target_2x, 4020).start())
+    c = dut.clock_host_bus
+    for i in range(22):
+        yield RisingEdge(c)
+    dut.r = 0
+    for i in range(10):
+        yield RisingEdge(c)
+    yield do_input(dut, 0xBEE0)
+    yield do_input(dut, 0xCAFE)
+    for i in range(10):
+        yield do_input(dut, i)
+    yield do_input(dut, 0xFFF0)
