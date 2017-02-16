@@ -1,7 +1,7 @@
 export TOPLEVEL_LANG = verilog
 export COCOTB=$(HOME)/software/cocotb
 export MODULE=test
-export COMPILE_ARGS=-D SIM -I../
+export COMPILE_ARGS=-D SIM_DRU -I../
 export TOPLEVEL=dru_1_4x
 
 CLEANTB = cd testbench; rm -rf *~ *.vcd *.xml sim_build

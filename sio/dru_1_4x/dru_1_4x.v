@@ -74,9 +74,11 @@ module dru_1_4x
       v <= vpipe[NBO+2];
    end
 
+`ifdef SIM_DRU
    initial
      begin
 	$dumpfile("dump.vcd");
 	$dumpvars(0);
      end
+`endif
 endmodule
