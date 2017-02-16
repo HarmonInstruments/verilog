@@ -32,15 +32,16 @@ module cosine_int
    reg [2:0] 		   sign = 0;
    reg [21:0] 		   coarse_2 = 0;
    wire [47:0] 		   dsp_o;
+   reg [13:0] 		   a_del = 0;
 
    dsp48_wrap_f
-     #(.USE_DPORT("TRUE"), // just for the extra pipe stage
+     #(.USE_DPORT("FALSE"),
        .AREG(2),
        .BREG(1))
    dsp_i
      (.clock(c),
       .ce1(1'b1), .ce2(1'b1), .cem(1'b1), .cep(1'b1),
-      .a({1'b0, a, 10'b0}), // 5 regs to out
+      .a({1'b0, a_del, 10'b0}), // 5 regs to out
       .b({5'b0, rom_d[12:0]}), // 3 regs to out
       .c({2'b0, coarse_2, 24'hFFFFFF}), // 2 regs to out
       .d(25'h0),
@@ -50,6 +51,7 @@ module cosine_int
       .p(dsp_o));
 
    always @ (posedge c) begin
+      a_del <= a;
       sign <= {sign[1:0], ~s};
       coarse_2 <= rom_d[34:13];
    end
