@@ -19,26 +19,24 @@
 `timescale 1ns / 1ps
 
 // wide multiply using 2x DSP48E1
-// p = ((a * b) + c), 4 clock pipe delay
-module mult_35x25
+// p = ((a * b) + c) >> 17, 4 clock pipe delay
+module mult_35x25_s17
   (
    input 	        clock,
    input signed [24:0]  a,
    input signed [34:0]  b,
    input signed [47:0]  c,
-   output signed [64:0] p);
+   output signed [47:0] p);
 
    wire signed [29:0] low_acout;
    wire signed [47:0] low_pcout;
-   wire [47:0] 	      p_low3;
-   reg [16:0] 	      p_low4;
 
    DSP48E1 #(.A_INPUT("CASCADE"), .AREG(1), .BREG(2)) dsp48_high
      (
       // status
       .OVERFLOW(), .PATTERNDETECT(), .PATTERNBDETECT(), .UNDERFLOW(),
       // outs
-      .P(p[64:17]), .CARRYOUT(),
+      .P(p), .CARRYOUT(),
       // control
       .ALUMODE(4'b0), .CARRYINSEL(3'd0),
       .CLK(clock),
@@ -64,7 +62,7 @@ module mult_35x25
       // status
       .OVERFLOW(), .PATTERNDETECT(), .PATTERNBDETECT(), .UNDERFLOW(),
       // outs
-      .P(p_low3), .CARRYOUT(),
+      .P(), .CARRYOUT(),
       // control
       .ALUMODE(4'b0), .CARRYINSEL(3'd0),
       .CLK(clock),
@@ -85,13 +83,6 @@ module mult_35x25
       .RSTB(1'b0), .RSTC(1'b0), .RSTCTRL(1'b0), .RSTD(1'b0),
       .RSTINMODE(1'b0), .RSTM(1'b0), .RSTP(1'b0)
       );
-
-   always @ (posedge clock)
-     begin
-	p_low4 <= p_low3[16:0];
-     end
-
-   assign p[16:0] = p_low4;
 
    initial
      begin

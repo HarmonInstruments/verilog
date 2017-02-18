@@ -65,7 +65,7 @@ def run_test(dut):
     a[13] = 0
     a[14] = 0
 
-    p_expected = (a * b + c)
+    p_expected = (a * b + c) >> 17
 
     p_result = np.zeros(count, dtype=np.int64)
 
@@ -86,5 +86,5 @@ def run_test(dut):
     if np.max(np.abs(error)) != 0:
         print 'index, a, b,        expected,    result, error'
         for i in range(count):
-            print i, format(2**25-1 & a[i], '07x'), format(2**35-1 & b[i], '09x'), format(2**48-1 & p_expected[i], '012x'), format(2**64-1 & p_result[i], '016x'), format(2**64-1  & (p_result[i] - p_expected[i]), '016x')
+            print i, format(2**25-1 & a[i], '07x'), format(2**35-1 & b[i], '09x'), format(2**48-1 & p_expected[i], '012x'), format(2**48-1 & p_result[i], '012x'), format(2**48-1  & (p_result[i] - p_expected[i]), '012x')
         dut.log.error("FAIL")
