@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Harmon Instruments, LLC
+ * Copyright (C) 2015 - 2017 Harmon Instruments, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,27 +34,32 @@ module cosine_int
    wire [47:0] 		   dsp_o;
    reg [13:0] 		   a_del = 0;
 
-   dsp48_wrap_f
-     #(.USE_DPORT("FALSE"),
-       .AREG(2),
-       .BREG(1))
-   dsp_i
-     (.clock(c),
-      .ce1(1'b1), .ce2(1'b1), .cem(1'b1), .cep(1'b1),
-      .a({1'b0, a_del, 10'b0}), // 5 regs to out
-      .b({5'b0, rom_d[12:0]}), // 3 regs to out
-      .c({2'b0, coarse_2, 24'hFFFFFF}), // 2 regs to out
-      .d(25'h0),
-      .mode({1'b0,2'd3,sign[2],1'b1}), // A+D 2 regs to out
-      .pcin(48'h0),
-      .pcout(),
-      .p(dsp_o));
-
    always @ (posedge c) begin
       a_del <= a;
       sign <= {sign[1:0], ~s};
       coarse_2 <= rom_d[34:13];
    end
+
+   DSP48E1 #(.AREG(2), .BREG(1)) dsp48_i
+     (.OVERFLOW(), .PATTERNDETECT(), .PATTERNBDETECT(), .UNDERFLOW(),
+      .CARRYOUT(), .P(dsp_o),
+      // control
+      .ALUMODE({2'd0, sign[2], 1'b1}), .CARRYINSEL(3'd0),
+      .CLK(c), .INMODE(5'b00100), .OPMODE(7'b0110101),
+      // signal inputs
+      .A({6'b0, a_del, 10'b0}), // 4 regs to outa
+      .B({5'b0, rom_d[12:0]}), // 3 regs to out
+      .C({2'b0, coarse_2, 24'hFFFFFF}), // 2 regs to out
+      .CARRYIN(1'b0), .D(25'b0),
+      // cascade ports
+      .ACOUT(), .BCOUT(), .CARRYCASCOUT(), .MULTSIGNOUT(), .PCOUT(),
+      .ACIN(30'h0), .BCIN(18'h0), .CARRYCASCIN(1'b0), .MULTSIGNIN(1'b0), .PCIN(48'h0),
+      // clock enables
+      .CEA1(1'b1), .CEA2(1'b1), .CEAD(1'b1), .CEALUMODE(1'b1), .CEB1(1'b1), .CEB2(1'b1),
+      .CEC(1'b1), .CECARRYIN(1'b1), .CECTRL(1'b1), .CED(1'b1), .CEINMODE(1'b1), .CEM(1'b1), .CEP(1'b1),
+      .RSTA(1'b0), .RSTALLCARRYIN(1'b0), .RSTALUMODE(1'b0), .RSTB(1'b0), .RSTC(1'b0), .RSTCTRL(1'b0), .RSTD(1'b0),
+      .RSTINMODE(1'b0), .RSTM(1'b0), .RSTP(1'b0)
+      );
 
    assign o = dsp_o[46:47-NBO];
 
