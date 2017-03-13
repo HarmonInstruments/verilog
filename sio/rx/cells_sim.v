@@ -1,3 +1,6 @@
+// From Yosys techlibs
+// Copyright (C) 2012 - 2016  Clifford Wolf <clifford@clifford.at>
+// ISC license
 
 `define SB_DFF_REG reg Q = 0;
 // `define SB_DFF_REG reg Q;
