@@ -138,7 +138,7 @@ module oddr(inout pin, input c, input [1:0] d);
 endmodule
 
 module sync_out(input clock, input wvalid, input [15:0] wdata, output [1:0] sync);
-   reg [1:0] dsync = 0;
+   reg dsync = 0;
    reg [7:0] count = 0;
    always @ (posedge clock)
      begin
@@ -146,14 +146,10 @@ module sync_out(input clock, input wvalid, input [15:0] wdata, output [1:0] sync
 	  count <= wdata[7:0];
 	else if(count != 0)
 	  count <= count - 1'b1;
-	case(count)
-	  2: dsync <= 2'b01;
-	  3: dsync <= 2'b10;
-	  default: dsync <= 2'b11;
-	endcase
+	dsync <= (count != 1);
      end
-   oddr osync0(.pin(sync[0]), .c(clock), .d(dsync));
-   oddr osync1(.pin(sync[1]), .c(clock), .d(dsync));
+   oddr osync0(.pin(sync[0]), .c(clock), .d({dsync,dsync}));
+   oddr osync1(.pin(sync[1]), .c(clock), .d({dsync,dsync}));
 endmodule
 
 module spi_ad7768(input clock, input wvalid, input [15:0] wdata, output reg [7:0] rdata,
