@@ -117,33 +117,9 @@ module rx_target(input clock, inout sdio,
       .D_OUT_1(tsr[7]),
       .D_IN_0(di[1]), // data in from pin
       .D_IN_1(di[0]));
-/*
-   reg [1:0] ledi;
-   always @ (posedge clockbuf)
-     begin
-	case(count[5:0])
-	  0: ledi <= 2'b00;
-	  1: ledi <= 2'b11;
-	  2: ledi <= 2'b01;
-	  3: ledi <= 2'b10;
-	  4: ledi <= 2'b00;
-	  5: ledi <= 2'b11;
-	  6: ledi <= 2'b00;
 
-	  default: ledi <= 2'b11;
-	endcase
-     end
-
-   SB_IO #(.PIN_TYPE(6'b110000), .IO_STANDARD("SB_LVCMOS")) led_ddr
-     (.PACKAGE_PIN(led),
-      .CLOCK_ENABLE(1'b1),
-      .OUTPUT_CLK(clockbuf),
-      .OUTPUT_ENABLE(1'b1),
-      .D_OUT_0(ledi[0]), // data out to pin
-      .D_OUT_1(ledi[1]));
-*/
-   oddr cf0(.pin(adclk[0]), .c(clockbuf), .d(2'b10));
-   oddr cf1(.pin(adclk[1]), .c(clockbuf), .d(2'b10));
+   oddr cf0(.pin(adclk[0]), .c(clockbuf), .d(2'b01));
+   oddr cf1(.pin(adclk[1]), .c(clockbuf), .d(2'b01));
 endmodule
 
 module oddr(inout pin, input c, input [1:0] d);
@@ -168,7 +144,7 @@ module sync_out(input clock, input wvalid, input [15:0] wdata, output [1:0] sync
      begin
 	if(wvalid)
 	  count <= wdata[7:0];
-else if(count != 0)
+	else if(count != 0)
 	  count <= count - 1'b1;
 	case(count)
 	  2: dsync <= 2'b01;
