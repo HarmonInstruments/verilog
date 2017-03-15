@@ -34,7 +34,6 @@ def read(dut, addr, data):
     dut.rx_host.wvalid = 0
     while(int(dut.rx_host.rvalid) == 0):
         yield RisingEdge(c)
-    print hex(int(dut.rx_host.rdata))
     raise ReturnValue(int(dut.rx_host.rdata))
 
 @cocotb.coroutine
@@ -47,7 +46,6 @@ def do_input(dut, data):
     dut.wvalid = 0
     for i in range(100):
         yield RisingEdge(c)
-    print hex(int(dut.rx_host.rdata))
     raise ReturnValue(int(dut.rx_host.rdata))
 
 @cocotb.test()
@@ -66,7 +64,14 @@ def run_test(dut):
             d=1
         if i==1:
             d = 256-(23+32)
-        yield read(dut, i, d)
+        v = yield read(dut, i, d)
+        print hex(v)
+
+    print 'capture timing'
+    for i in range(77, 83):
+        yield read(dut, 1, i)
+        v = yield read(dut, 6, 0)
+        print i, v
 
     for i in range(1000):
         yield RisingEdge(dut.clock)

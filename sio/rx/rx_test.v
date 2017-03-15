@@ -38,8 +38,7 @@ module rx_test
       .sync(sync),
       .amosi(amosi),
       .amiso(amosi),
-      .sdio(sdio),
-      .drdy(drdy)
+      .sdio(sdio)
       );
 
    rx_host rx_host
@@ -83,7 +82,7 @@ module ad7768_sim(input clock, sync, output reg d, input [2:0] channel, output r
 
    always @ (posedge clock)
      begin
-	state <= ~sync ? 7'd15 : state - 1'b1;
+	state <= ~sync ? 7'd7 : state - 1'b1;
 	if(state == 0)
 	  count <= count + 1'b1;
 
