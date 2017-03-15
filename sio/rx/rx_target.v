@@ -39,6 +39,9 @@ module rx_target(input clock, inout sdio,
 		 input [7:0] add,
 		 output led);
 
+   assign miso = 0;
+
+
    wire 	 clockbuf;
    SB_GB_IO cbuf (.PACKAGE_PIN(clock), .GLOBAL_BUFFER_OUTPUT(clockbuf));
 
@@ -55,10 +58,20 @@ module rx_target(input clock, inout sdio,
    reg 		    wvalid;
    reg [15:0] 	    rdata;
    wire [7:0] 	    spi0_rdata, spi1_rdata;
-   reg [23:0] 	    count = 0;
+   reg [22:0] 	    count = 0;
+
+   reg 		    drdy_prev = 0;
+   reg [6:0] 	    drdy_state = 0;
+
+   reg 		    channel_error;
+   reg [15:0] 	    fb;
 
    always @ (posedge clockbuf)
      begin
+	drdy_prev <= drdy;
+	if({drdy,drdy_prev} == 2'b01)
+	  drdy_state <= state;
+
 	rsr <= {rsr[17:0], di};
 	if(state[1:0] == 0)
 	  begin
@@ -67,6 +80,11 @@ module rx_target(input clock, inout sdio,
 	       27: tsr <= rdata[15:8];
 	       28: tsr <= rdata[7:0];
 	       default: tsr <= adcbuf; // 3 - 26
+	     endcase
+	     case(state[6:2])
+	       0: channel_error <= adcbuf[3:0] != 4'b0000;
+	       1: channel_error <= channel_error | (adcbuf[3:0] != 4'b1100);
+	       2: channel_error <= channel_error | (adcbuf[3:0] != 4'b1010);
 	     endcase
 	  end
 	else
@@ -84,6 +102,8 @@ module rx_target(input clock, inout sdio,
 	adcbuf <= add;
 	if(wvalid && (addr == 0))
 	  reset <= {2{wdata[0]}};
+	if(wvalid && (addr == 1))
+	  fb <= wdata;
 
 	//
 	case(addr)
@@ -91,6 +111,10 @@ module rx_target(input clock, inout sdio,
 	  2: rdata <= spi0_rdata;
 	  3: rdata <= spi1_rdata;
 	  4: rdata <= 16'hCAFE;
+	  5: rdata <= drdy_state;
+	  6: rdata <= channel_error;
+	  7: rdata <= fb;
+	  8: rdata <= wdata;
 	  default: rdata <= 16'hAAA0 | addr;
 	endcase
 	count <= count + 1'b1;
@@ -104,7 +128,7 @@ module rx_target(input clock, inout sdio,
    spi_ad7768 spi1(.clock(clockbuf), .wvalid(wvalid && (addr == 3)), .wdata(wdata), .rdata(spi1_rdata),
 		   .sck(asck[1]), .mosi(amosi[1]), .cs(acs[1]), .miso(amiso[1]));
 
-   assign led = count[23];
+   assign led = count[22];
    // DDR IO
    SB_IO #(.PIN_TYPE(6'b110000), .PULLUP(1'b1), .IO_STANDARD("SB_LVCMOS")) iopin
      (.PACKAGE_PIN(sdio),

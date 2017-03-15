@@ -41,7 +41,7 @@ module rx_host
    reg [21:0] 	    tsr = ~22'h0;
    reg [8:0] 	    state = 0;
    reg [20:0] 	    tbuf = 0;
-   reg [191:0] 	    rsr = 0;
+   reg [15:0] 	    rsr = 0;
    reg 		    tbuf_valid = 0;
    reg 		    read_active = 0;
    wire 	    id0; // input data from IOBUF to IDDR
@@ -49,6 +49,12 @@ module rx_host
    reg [7:0] 	    id2 = 8'hFF; // input sample delay line
    reg 		    id3 = 1; // input sample selected by sample_delay
    reg [2:0] 	    sample_delay = 3;
+   reg [23:0] 	    isample [0:7];
+
+   wire [23:0] 	    a0 = isample[0];
+   wire [23:0] 	    a1 = isample[1];
+   wire [23:0] 	    a7 = isample[7];
+   wire [7:0] 	    bitn = state[8:1] - 8'd39;
 
    always @ (posedge clock)
      begin
@@ -77,7 +83,10 @@ module rx_host
 	     tsr <= {tsr[20:0], 1'b1};
 	  end
 
-	if((state == 494) && read_active)
+	if((bitn < 192) && (~state[0]))
+	   isample[7-bitn[2:0]][23-bitn[7:3]] <= id3;
+
+	if((state == (78+384+32)) && read_active)
 	  begin
 	     rdata <= rsr[15:0];
 	     rvalid <= 1'b1;
@@ -89,7 +98,7 @@ module rx_host
 	  end
 
 	if(~state[0])
-	  rsr <= {rsr[190:0], id3};
+	  rsr <= {rsr[14:0], id3};
 
 	id2 <= {id2[5:0], id1};
 	id3 <= id2[sample_delay];

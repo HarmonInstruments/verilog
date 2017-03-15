@@ -38,7 +38,8 @@ module rx_test
       .sync(sync),
       .amosi(amosi),
       .amiso(amosi),
-      .sdio(sdio)
+      .sdio(sdio),
+      .drdy(drdy)
       );
 
    rx_host rx_host
@@ -46,7 +47,7 @@ module rx_test
       .clock_target(clock_target),
       .sdio(sdio));
 
-   ad7768_sim a0(.clock(clock_target), .sync(sync[0]), .d(add[0]), .channel(3'd0));
+   ad7768_sim a0(.clock(clock_target), .sync(sync[0]), .d(add[0]), .channel(3'd0), .drdy(drdy));
    ad7768_sim a1(.clock(clock_target), .sync(sync[0]), .d(add[1]), .channel(3'd1));
    ad7768_sim a2(.clock(clock_target), .sync(sync[0]), .d(add[2]), .channel(3'd2));
    ad7768_sim a3(.clock(clock_target), .sync(sync[0]), .d(add[3]), .channel(3'd3));
@@ -74,28 +75,22 @@ module glbl();
      GSR <= #0.01 1'b0;
 endmodule
 
-module ad7768_sim(input clock, sync, output reg d, input [2:0] channel);
+module ad7768_sim(input clock, sync, output reg d, input [2:0] channel, output reg drdy = 0);
    reg [6:0] state = 0;
    reg [15:0] count = 0;
    wire [4:0] bitn = state[6:2];
+   wire [31:0] odata = {5'h10, channel, 5'h10, channel, count};
+
    always @ (posedge clock)
      begin
 	state <= ~sync ? 7'd15 : state - 1'b1;
 	if(state == 0)
 	  count <= count + 1'b1;
 
-	if(state[1:0] == 0)
+	if(state[1:0] == 1)
 	  begin
-	     casex(bitn)
-	       5'h0x: d <= count[bitn[3:0]];
-	       5'h10: d <= channel[0];
-	       5'h11: d <= channel[1];
-	       5'h12: d <= channel[2];
-	       5'h18: d <= channel[0];
-	       5'h19: d <= channel[1];
-	       5'h17: d <= channel[0];
-	       default: d <= 1'b0;
-	     endcase
+	     drdy <= bitn == 0;
+	     d <= odata[bitn];
 	  end
      end
 endmodule

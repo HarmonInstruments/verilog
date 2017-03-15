@@ -61,7 +61,12 @@ def run_test(dut):
     for i in range(10):
         yield RisingEdge(dut.clock)
     for i in range(16):
-        yield read(dut, i, 15)
+        d = i
+        if i==0:
+            d=1
+        if i==1:
+            d = 256-(23+32)
+        yield read(dut, i, d)
 
     for i in range(1000):
         yield RisingEdge(dut.clock)
