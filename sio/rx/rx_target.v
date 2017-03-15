@@ -40,7 +40,6 @@ module rx_target(input clock, inout sdio,
 
    assign miso = 0;
 
-
    wire 	 clockbuf;
    SB_GB_IO cbuf (.PACKAGE_PIN(clock), .GLOBAL_BUFFER_OUTPUT(clockbuf));
 
@@ -60,7 +59,6 @@ module rx_target(input clock, inout sdio,
    reg [22:0] 	    count = 0;
 
    reg 		    channel_error;
-   reg [15:0] 	    fb;
 
    always @ (posedge clockbuf)
      begin
@@ -94,19 +92,14 @@ module rx_target(input clock, inout sdio,
 	adcbuf <= add;
 	if(wvalid && (addr == 0))
 	  reset <= {2{wdata[0]}};
-	if(wvalid && (addr == 1))
-	  fb <= wdata;
 
 	//
-	case(addr)
-	  0: rdata <= 16'hFFFF;
+	case(addr[2:0])
 	  2: rdata <= spi0_rdata;
 	  3: rdata <= spi1_rdata;
-	  4: rdata <= 16'hCAFE;
+	  5: rdata <= wdata;
 	  6: rdata <= channel_error;
-	  7: rdata <= fb;
-	  8: rdata <= wdata;
-	  default: rdata <= 16'hAAA0 | addr;
+	  default: rdata <= addr;
 	endcase
 	count <= count + 1'b1;
 
@@ -154,11 +147,11 @@ endmodule
 
 module sync_out(input clock, input wvalid, input [15:0] wdata, output [1:0] sync);
    reg dsync = 0;
-   reg [7:0] count = 0;
+   reg [6:0] count = 0;
    always @ (posedge clock)
      begin
 	if(wvalid)
-	  count <= wdata[7:0];
+	  count <= wdata[6:0];
 	else if(count != 0)
 	  count <= count - 1'b1;
 	dsync <= (count != 1);
