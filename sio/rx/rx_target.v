@@ -28,7 +28,6 @@ module rx_target(input clock, inout sdio,
 		 input cs, sck, mosi,
 		 output miso,
 		 //
-		 input drdy,
 		 output [1:0] adclk,
 		 output reg [1:0] reset = 0,
 		 output [1:0] sync,
@@ -60,18 +59,11 @@ module rx_target(input clock, inout sdio,
    wire [7:0] 	    spi0_rdata, spi1_rdata;
    reg [22:0] 	    count = 0;
 
-   reg 		    drdy_prev = 0;
-   reg [6:0] 	    drdy_state = 0;
-
    reg 		    channel_error;
    reg [15:0] 	    fb;
 
    always @ (posedge clockbuf)
      begin
-	drdy_prev <= drdy;
-	if({drdy,drdy_prev} == 2'b01)
-	  drdy_state <= state;
-
 	rsr <= {rsr[17:0], di};
 	if(state[1:0] == 0)
 	  begin
@@ -111,7 +103,6 @@ module rx_target(input clock, inout sdio,
 	  2: rdata <= spi0_rdata;
 	  3: rdata <= spi1_rdata;
 	  4: rdata <= 16'hCAFE;
-	  5: rdata <= drdy_state;
 	  6: rdata <= channel_error;
 	  7: rdata <= fb;
 	  8: rdata <= wdata;
