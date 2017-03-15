@@ -68,7 +68,7 @@ def run_test(dut):
         print hex(v)
 
     print 'capture timing'
-    for i in range(77, 83):
+    for i in range(89, 97):
         yield read(dut, 1, i)
         v = yield read(dut, 6, 0)
         print i, v

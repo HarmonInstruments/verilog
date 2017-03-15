@@ -29,7 +29,7 @@ module rx_target(input clock, inout sdio,
 		 output miso,
 		 //
 		 output [1:0] adclk,
-		 output reg [1:0] reset = 0,
+		 output [1:0] reset,
 		 output [1:0] sync,
 		 output [1:0] amosi,
 		 output [1:0] asck,
@@ -39,6 +39,7 @@ module rx_target(input clock, inout sdio,
 		 output led);
 
    assign miso = 0;
+   assign reset = 2'b11;
 
    wire 	 clockbuf;
    SB_GB_IO cbuf (.PACKAGE_PIN(clock), .GLOBAL_BUFFER_OUTPUT(clockbuf));
@@ -90,22 +91,20 @@ module rx_target(input clock, inout sdio,
 	  {addr,wdata} <= rsr;
 	wvalid <= (state == 11);
 	adcbuf <= add;
-	if(wvalid && (addr == 0))
-	  reset <= {2{wdata[0]}};
+	//if(wvalid && (addr == 0))
+	//  reset <= {2{wdata[0]}};
 
-	//
 	case(addr[2:0])
 	  2: rdata <= spi0_rdata;
 	  3: rdata <= spi1_rdata;
-	  5: rdata <= wdata;
 	  6: rdata <= channel_error;
-	  default: rdata <= addr;
+	  default: rdata <= wdata;
 	endcase
 	count <= count + 1'b1;
 
      end
 
-   sync_out synco(.clock(clockbuf), .wvalid(wvalid && (addr == 1)), .wdata(wdata), .sync(sync));
+   sync_out synco(.clock(clockbuf), .en(addr == 1), .state(state), .wdata(wdata), .sync(sync));
 
    spi_ad7768 spi0(.clock(clockbuf), .wvalid(wvalid && (addr == 2)), .wdata(wdata), .rdata(spi0_rdata),
 		   .sck(asck[0]), .mosi(amosi[0]), .cs(acs[0]), .miso(amiso[0]));
@@ -145,17 +144,10 @@ module oddr(inout pin, input c, input [1:0] d);
       .D_IN_1(d_in[1]));
 endmodule
 
-module sync_out(input clock, input wvalid, input [15:0] wdata, output [1:0] sync);
+module sync_out(input clock, input en, input [6:0] state, input [15:0] wdata, output [1:0] sync);
    reg dsync = 0;
-   reg [6:0] count = 0;
    always @ (posedge clock)
-     begin
-	if(wvalid)
-	  count <= wdata[6:0];
-	else if(count != 0)
-	  count <= count - 1'b1;
-	dsync <= (count != 1);
-     end
+     dsync <= ~en | (state != {4'b1011,wdata[2:0]});
    oddr osync0(.pin(sync[0]), .c(clock), .d({dsync,dsync}));
    oddr osync1(.pin(sync[1]), .c(clock), .d({dsync,dsync}));
 endmodule

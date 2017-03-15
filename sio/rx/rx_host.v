@@ -31,7 +31,7 @@ module rx_host
    output reg       clock_target = 0,
    input 	    wvalid,
    input [20:0]     wdata, // MSB is read, next 4 are addr, ls 16 are data
-   input [0:0]      addr,
+   input [1:0]      addr,
    output reg [63:0] rdata = 0,
    output reg        rvalid=0
    );
