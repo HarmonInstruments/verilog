@@ -55,7 +55,7 @@ module rx_target(input clock, inout sdio,
    reg [3:0] 	    addr;
    reg [15:0] 	    wdata;
    reg 		    wvalid;
-   reg [15:0] 	    rdata;
+   reg [7:0] 	    rdata;
    wire [7:0] 	    spi0_rdata, spi1_rdata;
    reg [22:0] 	    count = 0;
 
@@ -68,7 +68,7 @@ module rx_target(input clock, inout sdio,
 	  begin
 	     oe <= (state[6:2] > 2) && (state[6:2] < 29);
 	     case(state[6:2])
-	       27: tsr <= rdata[15:8];
+	       //27: tsr <= rdata[15:8];
 	       28: tsr <= rdata[7:0];
 	       default: tsr <= adcbuf; // 3 - 26
 	     endcase
@@ -98,7 +98,7 @@ module rx_target(input clock, inout sdio,
 	  2: rdata <= spi0_rdata;
 	  3: rdata <= spi1_rdata;
 	  6: rdata <= channel_error;
-	  default: rdata <= wdata;
+	  default: rdata <= wdata[7:0];
 	endcase
 	count <= count + 1'b1;
 
