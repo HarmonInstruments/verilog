@@ -30,9 +30,9 @@ module rx_host
    inout 	    sdio, // 62.5 Mb/s bidir
    output reg       clock_target = 0,
    input 	    wvalid,
-   input [20:0]     wdata, // MSB is read, next 4 are addr, ls 16 are data
+   input [31:0]     wdata, // MSB is read, next 4 are addr, ls 16 are data
    input [1:0]      addr,
-   output reg [63:0] rdata = 0,
+   output reg [31:0] rdata = 0,
    output reg        rvalid=0
    );
 
@@ -40,6 +40,7 @@ module rx_host
    reg 		    sdo = 1;
    reg [21:0] 	    tsr = ~22'h0;
    reg [8:0] 	    state = 0;
+   reg [8:0] 	    state_prev = 0;
    reg [20:0] 	    tbuf = 0;
    reg [15:0] 	    rsr = 0;
    reg 		    tbuf_valid = 0;
@@ -50,15 +51,18 @@ module rx_host
    reg 		    id3 = 1; // input sample selected by sample_delay
    reg [2:0] 	    sample_delay = 3;
    reg [23:0] 	    isample [0:7];
+   reg [23:0] 	    isample_oreg;
+   reg [23:0] 	    out_count = 0;
+   reg [7:0] 	    out_mask = 0;
+   reg [7:0] 	    out_en = 0;
+   reg 		    rvalid_next = 0;
 
-   wire [23:0] 	    a0 = isample[0];
-   wire [23:0] 	    a1 = isample[1];
-   wire [23:0] 	    a7 = isample[7];
    wire [7:0] 	    bitn = state[8:1] - 8'd39;
 
    always @ (posedge clock)
      begin
 	state <= state + 1'b1;
+	state_prev <= state;
 
 	if(wvalid && (addr == 1))
 	  sample_delay = wdata[2:0];
@@ -73,6 +77,14 @@ module rx_host
 	     tbuf_valid <= 1'b0;
 	  end
 
+	if(wvalid && (addr == 2))
+	  {out_mask,out_count} <= wdata;
+	else if((state == 384) && (out_count != 0))
+	  out_count <= out_count - 1'b1;
+
+	if(state == 384)
+	  out_en <= (out_count == 0) ? 1'b0 : out_mask;
+
 	if(state == 16) // transmission starts here
 	  begin
 	     tsr <= tbuf_valid ? {2'b00,tbuf[19:0]} : 22'hFFFFF;
@@ -86,15 +98,23 @@ module rx_host
 	if((bitn < 192) && (~state[0]))
 	   isample[7-bitn[2:0]][23-bitn[7:3]] <= id3;
 
-	if((state == (78+384+32)) && read_active)
+	if((state_prev == (78+384+32-1)) && read_active)
 	  begin
 	     rdata <= rsr[15:0];
 	     rvalid <= 1'b1;
+	     rvalid_next <= 1'b1;
+	  end
+	else if((state_prev[8:3] == 48) && out_en[state_prev[2:0]])
+	  begin
+	     rdata <= {isample_oreg,8'h0};
+	     rvalid <= 1'b1;
+	     rvalid_next <= 1'b0;
 	  end
 	else
 	  begin
 	     rdata <= 1'b0;
-	     rvalid <= 1'b0;
+	     rvalid <= rvalid_next; // flushes single read through merge_32_64
+	     rvalid_next <= 1'b0;
 	  end
 
 	if(~state[0])
@@ -106,6 +126,9 @@ module rx_host
 	tq <= (state > 60);
 	sdo <= tsr[21];
 	clock_target <= state[1];
+	if(state > 383)
+	  isample_oreg <= isample[state[2:0]];
+
      end
 
    IOBUF iobuf_i (.O(id0), .IO(sdio), .I(sdo), .T(tq));

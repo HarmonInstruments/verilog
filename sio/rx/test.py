@@ -29,49 +29,62 @@ from cocotb.result import TestFailure, ReturnValue
 def read(dut, addr, data):
     c = dut.clock
     dut.rx_host.wvalid = 1
+    dut.rx_host.addr = 0
     dut.rx_host.wdata = data | (1<<20) | (addr << 16)
     yield RisingEdge(c)
     dut.rx_host.wvalid = 0
     while(int(dut.rx_host.rvalid) == 0):
         yield RisingEdge(c)
-    raise ReturnValue(int(dut.rx_host.rdata))
+    rv = 0xFF & int(dut.rx_host.rdata)
+    yield RisingEdge(c)
+    raise ReturnValue(rv)
 
 @cocotb.coroutine
-def do_input(dut, data):
+def stream(dut, mask, count):
     c = dut.clock
-    dut.wvalid = 1
-    dut.wdata = data
-    print "in: {:04x}".format(data)
+    dut.rx_host.wvalid = 1
+    dut.rx_host.addr = 2
+    dut.rx_host.wdata = (mask << 24) | count
     yield RisingEdge(c)
-    dut.wvalid = 0
-    for i in range(100):
+    dut.rx_host.wvalid = 0
+    channels = bin(mask).count("1")
+    d = np.zeros(count*channels, dtype=int)
+    for i in range(channels*count):
+        while(int(dut.rx_host.rvalid) == 0):
+            yield RisingEdge(c)
+        d[i] = int(dut.rx_host.rdata)
         yield RisingEdge(c)
-    raise ReturnValue(int(dut.rx_host.rdata))
+    raise ReturnValue(d)
 
 @cocotb.test()
 def run_test(dut):
     """Test DRU"""
     dut.rx_host.wvalid = 0
-    dut.rx_host.addr = 0
     cocotb.fork(Clock(dut.clock, 8000).start())
-    for i in range(22):
-        yield RisingEdge(dut.clock)
-    for i in range(10):
+    for i in range(1000):
         yield RisingEdge(dut.clock)
     for i in range(16):
         d = i
         if i==0:
             d=1
         if i==1:
-            d = 256-(23+32)
+            d = 92
         v = yield read(dut, i, d)
         print hex(v)
 
     print 'capture timing'
     for i in range(89, 97):
         yield read(dut, 1, i)
+        yield read(dut, 0, 0)
         v = yield read(dut, 6, 0)
         print i, v
+    yield read(dut, 1, 92)
+    yield read(dut, 0, 0)
+    d = yield stream(dut, 0x83, 4)
 
-    for i in range(1000):
+    print d
+    for i in range(len(d)):
+        print hex(d[i])
+
+    for i in range(2000):
         yield RisingEdge(dut.clock)

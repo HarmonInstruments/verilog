@@ -52,8 +52,8 @@ module rx_target(input clock, inout sdio,
    reg 		    oe = 0;
    reg [7:0] 	    adcbuf = 0;
 
-   reg [3:0] 	    addr;
-   reg [15:0] 	    wdata;
+   reg [3:0] 	    addr = 0;
+   reg [15:0] 	    wdata = 0;
    reg 		    wvalid;
    reg [7:0] 	    rdata;
    wire [7:0] 	    spi0_rdata, spi1_rdata;
@@ -68,7 +68,7 @@ module rx_target(input clock, inout sdio,
 	  begin
 	     oe <= (state[6:2] > 2) && (state[6:2] < 29);
 	     case(state[6:2])
-	       //27: tsr <= rdata[15:8];
+	       27: tsr <= 8'hFF;
 	       28: tsr <= rdata[7:0];
 	       default: tsr <= adcbuf; // 3 - 26
 	     endcase
@@ -91,8 +91,6 @@ module rx_target(input clock, inout sdio,
 	  {addr,wdata} <= rsr;
 	wvalid <= (state == 11);
 	adcbuf <= add;
-	//if(wvalid && (addr == 0))
-	//  reset <= {2{wdata[0]}};
 
 	case(addr[2:0])
 	  2: rdata <= spi0_rdata;
@@ -147,7 +145,7 @@ endmodule
 module sync_out(input clock, input en, input [6:0] state, input [15:0] wdata, output [1:0] sync);
    reg dsync = 0;
    always @ (posedge clock)
-     dsync <= ~en | (state != {4'b1011,wdata[2:0]});
+     dsync <= ~en | (state != wdata[6:0]);
    oddr osync0(.pin(sync[0]), .c(clock), .d({dsync,dsync}));
    oddr osync1(.pin(sync[1]), .c(clock), .d({dsync,dsync}));
 endmodule
