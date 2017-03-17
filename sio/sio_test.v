@@ -22,7 +22,7 @@
 
 module sio_test
   (
-   input            clock_host_bus, clock_host, clock_host_2x, clock_target, clock_target_2x,
+   input            clock_host, clock_host_2x, clock_target, clock_target_2x,
    input 	    r,
    output [NBR-1:0] rdata,
    input [NBT-1:0]  wdata,
@@ -46,8 +46,7 @@ module sio_test
       .wvalid(t_wvalid)
       );
    sio_host_iddr #(.NBT(NBT), .NBR(NBR)) sio_host
-     (.cbus(clock_host_bus),
-      .c(clock_host),
+     (.c(clock_host),
       .c2x(clock_host_2x),
       .sdio(sdio),
       .rdata(rdata),

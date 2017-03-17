@@ -22,7 +22,6 @@
 
 module sio_host_iddr
   (
-   input            cbus, // bus clock
    input 	    c, c2x,
    inout 	    sdio,
    input 	    wvalid,
@@ -33,15 +32,6 @@ module sio_host_iddr
    parameter NBR = 32;
    parameter NBT = 40;
 
-   wire 	    wvalid_125;
-   reg [NBT-1:0]    wdata_125;
-   sync_pulse wvsync(.ci(cbus), .i(wvalid), .co(c), .o(wvalid_125));
-   always @ (posedge cbus)
-     begin
-	if(wvalid)
-	  wdata_125 <= wdata;
-     end
-
    // TX
    reg 		    tq = 0;
    reg 		    sdo = 1;
@@ -51,7 +41,7 @@ module sio_host_iddr
 
    always @ (posedge c)
      begin
-	tsr <= wvalid_125 ? {1'b0, wdata_125} : {tsr[NBT-1:0], 1'b1};
+	tsr <= wvalid ? {1'b0, wdata} : {tsr[NBT-1:0], 1'b1};
 	tq <= (state > (NBT+6));
 	if(state == 0)
 	  state <= wvalid && wdata[NBT-1];
@@ -69,6 +59,6 @@ module sio_host_iddr
 
    wire 	 rvalid;
 
-   rx_iddr #(.N(NBR)) rx(.c(c), .c2x(c2x), .r(state < NBT+14), .i(id0), .d(rdata), .v(rvalid));
+   rx_iddr #(.N(NBR)) rx(.c(c), .c2x(c2x), .r(state < NBT+9), .i(id0), .d(rdata), .v(rvalid));
 
 endmodule

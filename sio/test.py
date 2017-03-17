@@ -27,7 +27,7 @@ from cocotb.result import TestFailure, ReturnValue
 
 @cocotb.coroutine
 def do_input(dut, data):
-    c = dut.clock_host_bus
+    c = dut.clock_host
     dut.wvalid = 1
     dut.wdata = data
     print "in: {:04x}".format(data)
@@ -43,12 +43,11 @@ def run_test(dut):
     """Test DRU"""
     dut.r = 1
     dut.wvalid = 0
-    cocotb.fork(Clock(dut.clock_host_bus, 5000).start())
     cocotb.fork(Clock(dut.clock_host, 8000).start())
     cocotb.fork(Clock(dut.clock_host_2x, 4000).start())
     cocotb.fork(Clock(dut.clock_target, 8040).start())
     cocotb.fork(Clock(dut.clock_target_2x, 4020).start())
-    c = dut.clock_host_bus
+    c = dut.clock_host
     for i in range(22):
         yield RisingEdge(c)
     dut.r = 0
