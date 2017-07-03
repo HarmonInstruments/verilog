@@ -2,3 +2,6 @@
 *.out
 *.o
 *.pyc
+*.vcd
+*.xml
+sim_build
