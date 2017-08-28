@@ -27,34 +27,33 @@ from cocotb.result import TestFailure, ReturnValue
 
 @cocotb.coroutine
 def do_input(dut, data):
-    c = dut.clock_host
+    c = dut.clock
     dut.wvalid = 1
     dut.wdata = data
     print "in: {:04x}".format(data)
     yield RisingEdge(c)
     dut.wvalid = 0
-    for i in range(100):
+    for i in range(250):
         yield RisingEdge(c)
     print hex(int(dut.rdata))
     raise ReturnValue(int(dut.rdata))
 
 @cocotb.test()
 def run_test(dut):
-    """Test DRU"""
+    """Test SIO"""
     dut.r = 1
     dut.wvalid = 0
-    cocotb.fork(Clock(dut.clock_host, 8000).start())
-    cocotb.fork(Clock(dut.clock_host_2x, 4000).start())
-    cocotb.fork(Clock(dut.clock_target, 8040).start())
-    cocotb.fork(Clock(dut.clock_target_2x, 4020).start())
-    c = dut.clock_host
-    for i in range(22):
+    cocotb.fork(Clock(dut.clock, 8000).start())
+    cocotb.fork(Clock(dut.clock_2x, 4000).start())
+    c = dut.clock
+    for i in range(20000):
         yield RisingEdge(c)
     dut.r = 0
     for i in range(10):
         yield RisingEdge(c)
     yield do_input(dut, 0xBEE0)
-    yield do_input(dut, 0xCAFE)
+    yield do_input(dut, 0xFFFFFFFFFF)
+    yield do_input(dut, 0xCAFE | (0xFF << 64))
     for i in range(10):
         yield do_input(dut, i)
     yield do_input(dut, 0xFFF0)

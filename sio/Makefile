@@ -8,9 +8,9 @@ VIVADO = $(HOME)/software/Xilinx/Vivado/2016.4
 XPRIMS = $(VIVADO)/ids_lite/ISE/verilog/src/unisims/
 
 CLEANTB = cd testbench; rm -rf *~ *.vcd *.xml sim_build
-SOURCES = sio_test.v sio_host.v sio_target.v rx_iddr.v ../primitives/sync.v ../primitives/sync_pulse.v
+SOURCES = sio_test.v sio_host.v sio_target.v sio_common.v
 
-export VERILOG_SOURCES=$(SOURCES:%.v=../%.v) $(XPRIMS)/IOBUF.v $(XPRIMS)/IDDR.v
+export VERILOG_SOURCES=$(SOURCES:%.v=../%.v) $(XPRIMS)/IOBUF.v $(XPRIMS)/IDDR.v $(XPRIMS)/IDELAYE2.v $(XPRIMS)/ODDR.v
 
 all: test
 

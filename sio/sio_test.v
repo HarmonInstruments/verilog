@@ -22,41 +22,50 @@
 
 module sio_test
   (
-   input            clock_host, clock_host_2x, clock_target, clock_target_2x,
-   input 	    r,
-   output [NBR-1:0] rdata,
-   input [NBT-1:0]  wdata,
-   input 	    wvalid);
+   input         clock, clock_2x,
+   input         r,
+   output [31:0] rdata,
+   input [79:0]  wdata,
+   input         wvalid);
 
-   parameter NBT = 16;
-   parameter NBR = 16;
+   wire          sdio;
 
-   wire 		sdio;
+   wire [79:0]   t_wdata;
+   wire          t_wvalid;
+   reg [31:0]    t_rdata = 0;
+   reg [15:0]    stream_target = 16'hDE00;
+   reg [15:0]    stream_host = 16'hBE00;
 
-   wire [NBT-1:0] 	t_wdata;
-   wire 		t_wvalid;
-   reg [NBR-1:0] 	t_rdata = 0;
-
-   sio_target #(.NBT(NBR), .NBR(NBT)) sio_target
-     (.c(clock_target),
-      .c2x(clock_target_2x),
+   sio_target sio_target
+     (.c(clock),
+      .c2x(clock_2x),
       .sdio(sdio),
       .rdata(t_rdata),
       .wdata(t_wdata),
-      .wvalid(t_wvalid)
+      .wvalid(t_wvalid),
+      .stream_in(stream_target),
+      .stream_out()
       );
-   sio_host_iddr #(.NBT(NBT), .NBR(NBR)) sio_host
-     (.c(clock_host),
-      .c2x(clock_host_2x),
+   sio_host sio_host
+     (.c(clock),
+      .c2x(clock_2x),
+      .sync(1'b0),
       .sdio(sdio),
+      .stream_in(),
+      .stream_out(stream_host),
       .rdata(rdata),
       .wdata(wdata),
       .wvalid(wvalid));
 
-   always @ (posedge clock_target)
+   always @ (posedge clock)
      begin
-	if(t_wvalid)
-	  t_rdata <= t_wdata[NBR-1:0];
+        if(t_wvalid)
+          t_rdata <= t_wdata[31:0];
+        if(sio_host.state == 0)
+          stream_host <= stream_host + 1'b1;
+        if(sio_target.state == 1)
+          stream_target <= stream_target + 1'b1;
+
      end
 
    initial
