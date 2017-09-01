@@ -45,7 +45,8 @@ module rx_target(input clock, inout sdio,
    SB_GB_IO cbuf (.PACKAGE_PIN(clock), .GLOBAL_BUFFER_OUTPUT(clockbuf));
 
    reg [7:0] 	    tsr = 0;
-   reg [19:0] 	    rsr = 0;
+   reg              tdelay = 0;
+   reg [19:0]       rsr = 0;
    reg 		    sdo = 1;
    wire [1:0] 	    di;
    reg [6:0] 	    state = 0;
@@ -86,6 +87,8 @@ module rx_target(input clock, inout sdio,
 	     tsr <= {tsr[5:0], 2'b11};
 	  end
 
+        tdelay <= tsr[6];
+
 	if((state == 0) || (state > 120))
 	  state <= di[1] ? 1'b0 : 1'b1;
 	else
@@ -124,8 +127,8 @@ module rx_target(input clock, inout sdio,
       .INPUT_CLK(clockbuf),
       .OUTPUT_CLK(clockbuf),
       .OUTPUT_ENABLE(oe),
-      .D_OUT_0(tsr[6]), // data out to pin
-      .D_OUT_1(tsr[7]),
+      .D_OUT_0(tsr[7]), // data out to pin
+      .D_OUT_1(tdelay),
       .D_IN_0(di[1]), // data in from pin
       .D_IN_1(di[0]));
 
