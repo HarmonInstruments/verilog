@@ -59,6 +59,9 @@ module rx_target(input clock, inout sdio,
    wire [7:0] 	    spi0_rdata, spi1_rdata;
    reg [22:0] 	    count = 0;
 
+   wire [7:0]       prn;
+   reg [1:0]        prn_ce_count = 0;
+
    reg 		    channel_error;
 
    always @ (posedge clockbuf)
@@ -70,7 +73,7 @@ module rx_target(input clock, inout sdio,
 	     case(state[6:2])
 	       27: tsr <= 8'hFF;
 	       28: tsr <= rdata[7:0];
-	       default: tsr <= adcbuf; // 3 - 26
+	       default: tsr <= adcbuf ^ prn; // 3 - 26
 	     endcase
 	     case(state[6:2])
 	       0: channel_error <= adcbuf[3:0] != 4'b0000;
@@ -100,7 +103,10 @@ module rx_target(input clock, inout sdio,
 	endcase
 	count <= count + 1'b1;
 
+        prn_ce_count <= (wvalid && (addr == 4)) ? 1'b0 : prn_ce_count + 1'b1;
      end
+
+   lfsr_22_8 lfsr(.c(clockbuf), .ce(prn_ce_count == 0), .r(wvalid && (addr == 4)), .o(prn));
 
    sync_out synco(.clock(clockbuf), .en(addr == 1), .state(state), .wdata(wdata), .sync(sync));
 

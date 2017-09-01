@@ -63,7 +63,7 @@ def run_test(dut):
     cocotb.fork(Clock(dut.clock, 8000).start())
     for i in range(1000):
         yield RisingEdge(dut.clock)
-    for i in range(16):
+    for i in range(0):
         d = i
         if i==0:
             d=1
@@ -80,11 +80,9 @@ def run_test(dut):
         print i, v
     yield read(dut, 1, 92)
     yield read(dut, 0, 0)
-    d = yield stream(dut, 0x83, 4)
+    yield read(dut, 4, 0) # reset PRNG
+    d = yield stream(dut, 0x83, 16)
 
-    print d
+    print "stream"
     for i in range(len(d)):
         print hex(d[i])
-
-    for i in range(2000):
-        yield RisingEdge(dut.clock)

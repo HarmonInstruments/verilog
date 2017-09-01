@@ -59,6 +59,9 @@ module rx_host
 
    wire [7:0] 	    bitn = state[8:1] - 8'd39;
 
+   wire             prn;
+   reg              prn_reset = 0;
+
    always @ (posedge clock)
      begin
 	state <= state + 1'b1;
@@ -76,6 +79,9 @@ module rx_host
 	  begin
 	     tbuf_valid <= 1'b0;
 	  end
+
+        if(state == 16)
+          prn_reset <= tbuf_valid && (tbuf[19:16] == 4);
 
 	if(wvalid && (addr == 2))
 	  {out_mask,out_count} <= wdata;
@@ -96,7 +102,7 @@ module rx_host
 	  end
 
 	if((bitn < 192) && (~state[0]))
-	   isample[7-bitn[2:0]][23-bitn[7:3]] <= id3;
+	  isample[7-bitn[2:0]][23-bitn[7:3]] <= id3 ^ prn;
 
 	if((state_prev == (78+384+32-1)) && read_active)
 	  begin
@@ -130,6 +136,8 @@ module rx_host
 	  isample_oreg <= isample[state[2:0]];
 
      end
+
+   lfsr_22_1 lfsr(.c(clock), .ce(state[0]), .r(prn_reset && (state == 77)), .o(prn));
 
    IOBUF iobuf_i (.O(id0), .IO(sdio), .I(sdo), .T(tq));
 
