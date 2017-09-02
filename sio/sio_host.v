@@ -66,7 +66,7 @@ module sio_host (input c, c2x, sync, wvalid,
         id_prev <= id;
         rx_state <= {rx_state[15:0], ((state[5:4] == 2) && (~delay[5:2] == state[3:0]))};
 
-        if(wvalid && wdata[73:64] == 1)
+        if(wvalid && wdata[75:64] == 1)
           delay <= wdata[10:5];
 
         if(rx_state[0])
@@ -96,7 +96,7 @@ module sio_host (input c, c2x, sync, wvalid,
      end
 
    sio_common io(.c(c), .c2x(c2x),
-                 .wv(wvalid && (wdata[73:64] == 1)),
+                 .wv(wvalid && (wdata[75:64] == 1)),
                  .d(wdata[4:0]),
                  .sdio(sdio),
                  .tq((state > 29) && (state < 55)),
