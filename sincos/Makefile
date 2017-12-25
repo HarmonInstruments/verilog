@@ -6,7 +6,7 @@ export TOPLEVEL=sincos
 
 CLEANTB = cd testbench; rm -rf *~ *.vcd *.xml sim_build
 SOURCES_COMMON = cos_int.v sincos.v
-VIVADO = $(HOME)/software/Xilinx/Vivado/2016.3
+VIVADO = $(HOME)/software/Xilinx/Vivado/2016.4
 XPRIMS = $(VIVADO)/ids_lite/ISE/verilog/xeclib/unisims
 SOURCES_7SERIES = cosrom_RAMB36E1.v ../primitives/dsp_DSP48E1.v
 SOURCES_GENERIC = cosrom_generic.v
