@@ -37,7 +37,8 @@ module halfband_decim
    wire signed [23:0] a [0:NDSP-1];
    wire signed [23:0] d [0:NDSP-1];
    assign a[0] = id0;
-   assign od = p[NDSP-1][40:17];
+   reg [23:0] 	      odr = 0;
+   assign od = odr;
 
    wire [23:0] 	      center_data;
    delay #(.NB(24), .DEL(1+2+NDSP * (NCH))) cdelay(.c(c), .i(id1), .o(center_data));
@@ -45,18 +46,7 @@ module halfband_decim
    genvar 	      i;
    generate
       for(i=0; i<NDSP; i=i+1) begin: dsp
-	 DSP48E1 #(
-		   .A_INPUT("DIRECT"), .B_INPUT("DIRECT"), // "DIRECT" "CASCADE"
-		   .USE_DPORT("TRUE"),
-		   // register enables
-		   .ADREG(1),      // pipeline stages for pre-adder (0 or 1)
-		   .ALUMODEREG(1), // pipeline stages for ALUMODE (0 or 1)
-		   .AREG(2),       // pipeline stages for A (0, 1 or 2)
-		   .BCASCREG(1),   // pipeline stages between B/BCIN and BCOUT (0, 1 or 2)
-		   .BREG(1),       // pipeline stages for B (0, 1 or 2)
-		   .CARRYINREG(1), // this and below are 0 or 1
-		   .CARRYINSELREG(1),
-		   .CREG(1), .DREG(1), .INMODEREG(1), .MREG(1), .OPMODEREG(1), .PREG(1))
+	 DSP48E1 #(.USE_DPORT("TRUE"), .ADREG(1), .AREG(2), .BREG(1), .CREG(1), .DREG(1), .OPMODEREG(1))
 	 dsp48_i
 	    (
 	     // status
@@ -73,28 +63,23 @@ module halfband_decim
 	     // signal inputs
 	     .A({5'd0, a[i][23], a[i]}), // 30
 	     .B(tap), // 18
-	     .C(i==0 ? {center_data, 17'h10000} : 48'h0), // 48
+	     .C(i==0 ? {4'h0, center_data, 20'h80000} : 48'h0), // 48
 	     .D({d[i][23], d[i]}), // 25
 	     .CARRYIN(1'b0),
 	     // cascade ports
-	     .ACOUT(), .BCOUT(), .CARRYCASCOUT(), .MULTSIGNOUT(),
-	     .PCOUT(pcout[i]),
-	     .ACIN(30'h0),
-	     .BCIN(18'h0),
-	     .CARRYCASCIN(1'b0),
-	     .MULTSIGNIN(1'b0),
+	     .ACOUT(), .BCOUT(), .CARRYCASCOUT(), .MULTSIGNOUT(), .PCOUT(pcout[i]),
+	     .ACIN(30'h0), .BCIN(18'h0), .CARRYCASCIN(1'b0), .MULTSIGNIN(1'b0),
 	     .PCIN(i==0 ? 48'h0 : pcout[i-1]),
 	     // clock enables
 	     .CEA1(1'b1), .CEA2(1'b1), .CEAD(1'b1), .CEALUMODE(1'b1),
 	     .CEB1(load_tap[i]), .CEB2(load_tap[i]), .CEC(1'b1),
-	     .CECARRYIN(1'b1),
-	     .CECTRL(1'b1), // opmode
+	     .CECARRYIN(1'b1), .CECTRL(1'b1), // opmode
 	     .CED(1'b1), .CEINMODE(1'b1), .CEM(1'b1), .CEP(1'b1),
 	     .RSTA(1'b0), .RSTALLCARRYIN(1'b0), .RSTALUMODE(1'b0),
 	     .RSTB(1'b0), .RSTC(1'b0), .RSTCTRL(1'b0), .RSTD(1'b0), .RSTINMODE(1'b0), .RSTM(1'b0), .RSTP(1'b0)
 	     );
 	 if(i!=0)
-	    delay #(.NB(24), .DEL(1+NCH)) del_a(.c(c), .i(a[i-1]), .o(a[i]));
+	   delay #(.NB(24), .DEL(1+NCH)) del_a(.c(c), .i(a[i-1]), .o(a[i]));
 	 if(i==(NDSP-1))
 	   delay #(.NB(24), .DEL(1+NCH)) del_d(.c(c), .i(a[NDSP-1]), .o(d[i]));
 	 else
@@ -102,12 +87,54 @@ module halfband_decim
       end
    endgenerate
 
+   always @ (posedge c) begin
+      odr <= p[NDSP-1][43:20];
+   end
+
    initial
      begin
 	$dumpfile("dump.vcd");
 	$dumpvars(0);
      end
 
+endmodule
+
+// i0 and i1 are each two TDM channels
+// o0 is even samples
+module halfband_reorder(input c, s, input [23:0] i0, i1, output reg [23:0] o0, o1);
+   parameter N = 2; // number of input TDM channels
+   wire [23:0] i0d2, i1d2, i1d4;
+   delay #(.NB(24), .DEL(N)) delay_1(.c(c), .i(i0), .o(i0d2));
+   delay #(.NB(24), .DEL(N)) delay_2(.c(c), .i(i1), .o(i1d2));
+   delay #(.NB(24), .DEL(N*2)) delay_3(.c(c), .i(i1), .o(i1d4));
+   o0 <= s ? i1d4 : i0d2;
+   o1 <= s ? i1d2 : i0;
+endmodule
+
+module halfband_8ch_decim4(input c, input[1:0] sync, input [23:0] i0, i1, i2, i3, output [23:0] o);
+   wire [23:0] i0r, i1r, i2r, i3r, fo0, fo1, fo0r, fo1r;
+   reg 	       sr1, sr2;
+   reg [2:0]   count;
+   always @ (posedge c)
+     begin
+	count <= sync ? 1'b0 : count + 1'b1;
+	case(count)
+	  0: {sr1, sr2} <= 2'b00;
+	  1: {sr1, sr2} <= 2'b00;
+	  2: {sr1, sr2} <= 2'b10;
+	  3: {sr1, sr2} <= 2'b10;
+	  4: {sr1, sr2} <= 2'b01;
+	  5: {sr1, sr2} <= 2'b01;
+	  6: {sr1, sr2} <= 2'b11;
+	  7: {sr1, sr2} <= 2'b11;
+	endcase
+     end
+   halfband_reorder #(.N(2)) reorder0(.c(c), .s(sr1), .i0(i0), .i1(i1), .o0(i0r), .o1(i1r));
+   halfband_reorder #(.N(2)) reorder1(.c(c), .s(sr1), .i0(i2), .i1(i3), .o0(i2r), .o1(i3r));
+   halfband_decim #(.NDSP(3)) decim0(.c(c), .tap(tap), .load_tap(lt[2:0]), .id0(i0r), .id1(i1r), .od(fo0));
+   halfband_decim #(.NDSP(3)) decim1(.c(c), .tap(tap), .load_tap(lt[2:0]), .id0(i2r), .id1(i2r), .od(fo1));
+   halfband_reorder #(.N(4)) reorder1(.c(c), .s(sr2), .i0(fo0), .i1(fo1), .o0(fo0r), .o1(fo1r));
+   halfband_decim #(.NDSP(3)) decim1(.c(c), .tap(tap), .load_tap(lt[5:3]), .id0(fo0r), .id1(fo1r), .od(o));
 endmodule
 
 module delay (input c, input [NB-1:0] i, output [NB-1:0] o);

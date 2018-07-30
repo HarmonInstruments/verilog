@@ -42,7 +42,7 @@ def impulse(dut, s=[0,1]):
         v = dut.od.value.integer
         if v > (2**23-1):
             v = -1* (2**24 - v)
-        print 'hit', v
+        print v
         r[i] = v
     print r
     raise ReturnValue(r)
@@ -63,11 +63,11 @@ def run_test(dut):
     dut.id1 = 0
     a = cocotb.fork(Clock(dut.c, 2500).start())
     yield RisingEdge(dut.c)
-    yield load_taps(dut, [1604, -12992, 76924])
+    yield load_taps(dut, [1604*8, -12992*8, 8*(76924-65536)])
     for i in range(16):
         yield RisingEdge(dut.c)
     a = yield impulse(dut, s=[0,1])#cocotb.fork(impulse(dut))
     b = yield impulse(dut, s=[1,0])#cocotb.fork(impulse(dut))
     print a, b
-    print zip(a,b)[6:][::4]
     print zip(a,b)[7:][::4]
+    print zip(a,b)[8:][::4]

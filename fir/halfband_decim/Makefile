@@ -5,7 +5,7 @@ export COMPILE_ARGS=-D SIM -I../
 export TOPLEVEL=halfband_decim
 
 CLEANTB = cd testbench; rm -rf *~ *.vcd *.xml sim_build
-VIVADO = $(HOME)/software/Xilinx/Vivado/2016.3
+VIVADO = $(HOME)/software/Xilinx/Vivado/2016.4
 XPRIMS = $(VIVADO)/ids_lite/ISE/verilog/xeclib/unisims
 SOURCES = halfband_decim.v
 
