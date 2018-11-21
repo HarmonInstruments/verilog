@@ -18,6 +18,8 @@ module display_host
    // I2C
    input         sda_t, scl_t, // tristate
    output        sda_d, scl_d,
+   // link status
+   output        link_active,
    // pio data to / from display
    input         wvalid,
    input [3:0]   waddr,
@@ -96,7 +98,8 @@ module display_host
 
    display_rx rx(.c(c125), .c2x(c250), .r(state == 96), .i(iobuf_o),
                  .o({srdata, fifostat, sda_d, scl_d}));
-   display_rx_rdata rx_rdata(.c(c125), .ce(state == 4), .i(srdata), .o(rdata));
+   display_rx_rdata rx_rdata(.c(c125), .ce(state == 4), .i(srdata),
+                             .active(link_active), .o(rdata));
 
    IOBUF iobuf_i (.O(iobuf_o), .IO(sdio), .I(sdo), .T(tq));
 
@@ -133,10 +136,33 @@ module display_rx(input c, c2x, r, i, output reg [5:0] o = 0);
      end
 endmodule
 
-module display_rx_rdata(input c, ce, input [2:0] i, output reg [15:0] o = 0);
+module display_rx_rdata(input c, ce, input [2:0] i, output reg active = 0, output reg [15:0] o = 0);
    reg [15:0] sr;
+   reg [6:0]  count_ce = 0;
+   reg [3:0]  count_frame = 0;
+   reg [1:0]  state_active = 0;
+
    always @ (posedge c)
      begin
+        // verify i[2] is happening every 400 clocks and [11:8] == 0x5
+        // count of clocks since valid ce and frame
+        if(ce)
+          begin
+             count_ce <= 1'b0;
+             count_frame <= i[2] ? 1'b0 : count_frame + 1'b1;
+             if((count_ce != 99) || (i[2] && (count_frame != 7)))
+               state_active <= 1'b0;
+             else if(state_active != 3)
+               state_active <= state_active + i[2];
+          end
+        else
+          begin
+             count_ce <= count_ce + 1'b1;
+             if(count_ce > 99)
+               state_active <= 1'b0;
+          end
+        active <= state_active == 3;
+
         if (ce)
           begin
              if(i[2])
