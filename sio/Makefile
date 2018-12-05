@@ -1,11 +1,7 @@
 export TOPLEVEL_LANG = verilog
-export COCOTB=$(HOME)/software/cocotb
 export MODULE=test
 export COMPILE_ARGS=-D SIM -I../
 export TOPLEVEL=sio_test
-
-VIVADO = $(HOME)/software/Xilinx/Vivado/2016.4
-XPRIMS = $(VIVADO)/ids_lite/ISE/verilog/src/unisims/
 
 CLEANTB = cd testbench; rm -rf *~ *.vcd *.xml sim_build
 SOURCES = sio_test.v sio_host.v sio_target.v sio_common.v
