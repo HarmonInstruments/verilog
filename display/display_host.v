@@ -8,7 +8,8 @@ module display_host
   (
    input         c125,
    input         c250,
-   inout         sdio, // DDR out, SDR in
+   input         sdi, // SDR
+   output        sdo, // DDR
    output        clock_target, // 12.5 MHz
    // pixel data to display
    input         pixel_valid,
@@ -31,10 +32,8 @@ module display_host
    reg [11:0] 	    d = 0;
    reg 		    dv = 0;
    reg              dv_at_start = 0;
-   wire             sdo, tq;
    reg [15:0]       tsr = 0;
    reg [6:0] 	    state = 0; // 0 - 99
-   wire 	    id0; // input data from iobuf_sdio
    reg              ce_2x = 1'b0;
    reg [11:0]       csr = 0;
 
@@ -90,18 +89,14 @@ module display_host
      end
 
    out_4x out_d(.c(c125), .c2x(c250), .ce_2x(ce_2x), .i(tsr[3:0]), .o(sdo));
-   out_1x out_t(.c(c125), .c2x(c250), .ce_2x(ce_2x), .i(state > 80), .o(tq));
    out_4x out_c(.c(c125), .c2x(c250), .ce_2x(ce_2x), .i(csr[3:0]), .o(clock_target));
 
    wire [2:0] srdata;
-   wire       iobuf_o;
 
-   display_rx rx(.c(c125), .c2x(c250), .r(state == 96), .i(iobuf_o),
+   display_rx rx(.c(c125), .c2x(c250), .r(state == 96), .i(sdi),
                  .o({srdata, fifostat, sda_d, scl_d}));
    display_rx_rdata rx_rdata(.c(c125), .ce(state == 4), .i(srdata),
                              .active(link_active), .o(rdata));
-
-   IOBUF iobuf_i (.O(iobuf_o), .IO(sdio), .I(sdo), .T(tq));
 
 endmodule
 

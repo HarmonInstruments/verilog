@@ -6,7 +6,7 @@
 
 module display_test
   (input            c125, c250, reset);
-   wire 	    sdio;
+   wire 	    sdi, sdo;
    wire 	    clock_target;
    reg              c250_target = 0;
    reg              c125_target = 0;
@@ -16,7 +16,8 @@ module display_test
       .c250(c250_target), // in application, these two are PLL derived from clock_target
       .reset(reset),
       .clock(clock_target),
-      .sdio(sdio),
+      .sdi(sdi),
+      .sdo(sdo),
       .wvalid(),
       .addr(),
       .wdata(),
@@ -27,9 +28,9 @@ module display_test
      (.c125(c125),
       .c250(c250),
       .clock_target(clock_target),
-      .sdio(sdio));
-
-//   pulldown(sdio);
+      .sdi(sdo),
+      .sdo(sdi)
+      );
 
    always @ *
      c250_target <= #1 c250;

@@ -9,7 +9,8 @@ module display_target
    input             c125, c250, // PLL derived from clock
    input             reset,
    input             clock, // clock provided by host, 31.25 MHz
-   inout             sdio, // IO pin to host
+   input             sdi, // data from host
+   output reg        sdo, // dat to host
    // display
    output reg        pixel_valid = 0,
    output reg        pixel_start_of_frame = 0,
@@ -30,7 +31,6 @@ module display_target
    reg [15:0]        rsr = 0;
    reg [11:0]        tsr = 0;
    reg [6:0]         state = 0;
-   reg               tq = 0; // tristate output
    reg               td = 0;
 
    wire [3:0]        id;
@@ -48,8 +48,7 @@ module display_target
      begin
 	tsr <= (state == 74) ? {rdata_tx_o, fifostat, sda_d, scl_d, 6'b100000} :
                {1'b0, tsr[11:1]};
-        td <= tsr[0];
-        tq <= (state < 74) || (state > 89);
+        sdo <= tsr[0];
 
         state <= ic2_frame ? 1'b0 : state + 1'b1;
 
@@ -87,12 +86,9 @@ module display_target
           {sda_t, scl_t} <= rsr[15:14];
      end
 
-   wire sdi;
-   BB BBd(.B(sdio), .T(tq), .I(td), .O(sdi));
-
    IDDRX2F IDDRd
      (
-      .D(sdi), // in from pin
+      .D(sdi), // in from host
       .SCLK(c125), // div 2 of eclk
       .ECLK(c250), // fast clock
       .RST(reset),
