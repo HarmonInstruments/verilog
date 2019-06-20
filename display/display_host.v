@@ -11,6 +11,8 @@ module display_host
    input         sdi, // SDR
    output        sdo, // DDR
    output        clock_target, // 12.5 MHz
+   // optional inversion of diff pairs
+   input         invert_clock, invert_sdo, invert_sdi,
    // pixel data to display
    input         pixel_valid,
    output reg    pixel_ready = 0,
@@ -88,12 +90,12 @@ module display_host
           end
      end
 
-   out_4x out_d(.c(c125), .c2x(c250), .ce_2x(ce_2x), .i(tsr[3:0]), .o(sdo));
-   out_4x out_c(.c(c125), .c2x(c250), .ce_2x(ce_2x), .i(csr[3:0]), .o(clock_target));
+   out_4x out_d(.c(c125), .c2x(c250), .ce_2x(ce_2x), .i({4{invert_sdo}}^tsr[3:0]), .o(sdo));
+   out_4x out_c(.c(c125), .c2x(c250), .ce_2x(ce_2x), .i({4{invert_clock}}^csr[3:0]), .o(clock_target));
 
    wire [2:0] srdata;
 
-   display_rx rx(.c(c125), .c2x(c250), .r(state == 96), .i(sdi),
+   display_rx rx(.c(c125), .c2x(c250), .r(state == 96), .i(sdi^invert_sdi),
                  .o({srdata, fifostat, sda_d, scl_d}));
    display_rx_rdata rx_rdata(.c(c125), .ce(state == 4), .i(srdata),
                              .active(link_active), .o(rdata));

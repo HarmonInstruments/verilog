@@ -27,6 +27,9 @@ module display_test
    display_host display_host
      (.c125(c125),
       .c250(c250),
+      .invert_clock(1'b0),
+      .invert_sdo(1'b0),
+      .invert_sdi(1'b0),
       .clock_target(clock_target),
       .sdi(sdo),
       .sdo(sdi)
