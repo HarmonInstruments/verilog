@@ -6,7 +6,7 @@ export TOPLEVEL=rx_test
 CLEANTB = cd testbench; rm -rf *~ *.vcd *.xml sim_build
 SOURCES = rx_test.v rx_host.v rx_target.v cells_sim.v lfsr_22_8.v lfsr_22_1.v
 
-export VERILOG_SOURCES=$(SOURCES:%.v=../%.v) $(XPRIMS)/IOBUF.v $(XPRIMS)/IDDR.v
+export VERILOG_SOURCES=$(SOURCES:%.v=../%.v) $(XPRIMS)/IDDR.v
 
 all: test
 

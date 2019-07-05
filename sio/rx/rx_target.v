@@ -23,7 +23,7 @@
 // clock is 31.25 MHz
 // host will initiate a transfer every 128 clocks
 
-module rx_target(input clock, inout sdio,
+module rx_target(input clock, input sdi, output sdo,
 		 // uC
 		 input cs, sck, mosi,
 		 output miso,
@@ -47,10 +47,8 @@ module rx_target(input clock, inout sdio,
    reg [7:0] 	    tsr = 0;
    reg              tdelay = 0;
    reg [19:0]       rsr = 0;
-   reg 		    sdo = 1;
    wire [1:0] 	    di;
    reg [6:0] 	    state = 0;
-   reg 		    oe = 0;
    reg [7:0] 	    adcbuf = 0;
 
    reg [3:0] 	    addr = 0;
@@ -70,7 +68,6 @@ module rx_target(input clock, inout sdio,
 	rsr <= {rsr[17:0], di};
 	if(state[1:0] == 0)
 	  begin
-	     oe <= (state[6:2] > 2) && (state[6:2] < 29);
 	     case(state[6:2])
 	       27: tsr <= 8'hFF;
 	       28: tsr <= rdata[7:0];
@@ -119,19 +116,20 @@ module rx_target(input clock, inout sdio,
 		   .sck(asck[1]), .mosi(amosi[1]), .cs(acs[1]), .miso(amiso[1]));
 
    assign led = count[22];
-   // DDR IO
+   // DDR in
    SB_IO #(.PIN_TYPE(6'b110000), .PULLUP(1'b1), .IO_STANDARD("SB_LVCMOS")) iopin
-     (.PACKAGE_PIN(sdio),
+     (.PACKAGE_PIN(sdi),
       .LATCH_INPUT_VALUE(1'b0),
       .CLOCK_ENABLE(1'b1),
       .INPUT_CLK(clockbuf),
-      .OUTPUT_CLK(clockbuf),
-      .OUTPUT_ENABLE(oe),
-      .D_OUT_0(tsr[7]), // data out to pin
-      .D_OUT_1(tdelay),
+      .OUTPUT_CLK(1'b0),
+      .OUTPUT_ENABLE(1'b0),
+      .D_OUT_0(1'b0), // data out to pin
+      .D_OUT_1(1'b0),
       .D_IN_0(di[1]), // data in from pin
       .D_IN_1(di[0]));
 
+   oddr oddr_sdo(.pin(sdo), .c(clockbuf), .d({tdelay,tsr[7]}));
    oddr cf0(.pin(adclk[0]), .c(clockbuf), .d(2'b01));
    oddr cf1(.pin(adclk[1]), .c(clockbuf), .d(2'b01));
 endmodule

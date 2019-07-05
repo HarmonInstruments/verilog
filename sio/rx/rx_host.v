@@ -26,18 +26,17 @@
 
 module rx_host
   (
-   input            clock, // 125 MHz
-   inout 	    sdio, // 62.5 Mb/s bidir
-   output reg       clock_target = 0,
-   input 	    wvalid,
-   input [31:0]     wdata, // MSB is read, next 4 are addr, ls 16 are data
-   input [1:0]      addr,
+   input             clock, // 125 MHz
+   inout             sdi, // 62.5 Mb/s
+   output reg        sdo,
+   output reg        clock_target = 0,
+   input             wvalid,
+   input [31:0]      wdata, // MSB is read, next 4 are addr, ls 16 are data
+   input [1:0]       addr,
    output reg [31:0] rdata = 0,
    output reg        rvalid=0
    );
 
-   reg 		    tq = 0;
-   reg 		    sdo = 1;
    reg [21:0] 	    tsr = ~22'h0;
    reg [8:0] 	    state = 0;
    reg [8:0] 	    state_prev = 0;
@@ -45,7 +44,6 @@ module rx_host
    reg [15:0] 	    rsr = 0;
    reg 		    tbuf_valid = 0;
    reg 		    read_active = 0;
-   wire 	    id0; // input data from IOBUF to IDDR
    wire [1:0] 	    id1; // input data from IDDR
    reg [7:0] 	    id2 = 8'hFF; // input sample delay line
    reg 		    id3 = 1; // input sample selected by sample_delay
@@ -129,7 +127,6 @@ module rx_host
 	id2 <= {id2[5:0], id1};
 	id3 <= id2[sample_delay];
 
-	tq <= (state > 60);
 	sdo <= tsr[21];
 	clock_target <= state[1];
 	if(state > 383)
@@ -139,8 +136,6 @@ module rx_host
 
    lfsr_22_1 lfsr(.c(clock), .ce(state[0]), .r(prn_reset && (state == 79)), .o(prn));
 
-   IOBUF iobuf_i (.O(id0), .IO(sdio), .I(sdo), .T(tq));
-
    IDDR #(.DDR_CLK_EDGE("SAME_EDGE_PIPELINED"),
 	  .INIT_Q1(1'b1), .INIT_Q2(1'b1),
 	  .SRTYPE("SYNC")) IDDR_i
@@ -149,7 +144,7 @@ module rx_host
       .Q2(id1[0]),
       .C(clock),
       .CE(1'b1),
-      .D(id0),
+      .D(sdi),
       .R(1'b0),
       .S(1'b0)
       );

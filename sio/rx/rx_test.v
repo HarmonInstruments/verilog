@@ -25,7 +25,7 @@ module rx_test
    input [19:0]     wdata,
    input 	    wvalid);
 
-   wire 	    sdio;
+   wire 	    sdi, sdo;
    wire 	    clock_target;
 
    wire [1:0] 	    amosi;
@@ -38,13 +38,15 @@ module rx_test
       .sync(sync),
       .amosi(amosi),
       .amiso(amosi),
-      .sdio(sdio)
+      .sdi(sdo),
+      .sdo(sdi)
       );
 
    rx_host rx_host
      (.clock(clock),
       .clock_target(clock_target),
-      .sdio(sdio));
+      .sdi(sdi),
+      .sdo(sdo));
 
    ad7768_sim a0(.clock(clock_target), .sync(sync[0]), .d(add[0]), .channel(3'd0), .drdy(drdy));
    ad7768_sim a1(.clock(clock_target), .sync(sync[0]), .d(add[1]), .channel(3'd1));
