@@ -16,13 +16,13 @@ This implements serial wire debug as used on ARM microcontrollers.
 
 ### Set creset command
 
-wdata[36:32] = 0x13
-wdata[0] = creset pin value to set
+ - wdata[36:32] = 0x13
+ - wdata[0] = creset pin value to set
 
 ### Set swclk frequency command
 
-wdata[36:32] = 0x12
-wdata[7:0] = clkdiv
+ - wdata[36:32] = 0x12
+ - wdata[7:0] = clkdiv
 
 Sets the swclk frequency, fswclk = fclock / (2*(clkdiv + 1))
 
