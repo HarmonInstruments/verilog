@@ -13,9 +13,5 @@ include $(COCOTB)/makefiles/Makefile.sim
 
 all: test
 
-test: $(SOURCES)
-	$(CLEANTB)
-	make -C testbench
-
 clean::
 	rm -rf *.pyc *~ *.vcd *.xml
