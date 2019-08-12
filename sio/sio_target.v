@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2017 Harmon Instruments, LLC
+ * Copyright (C) 2014-2019 Harmon Instruments, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,13 +21,14 @@
 `timescale 1ns / 1ps
 
 module sio_target(input c, c2x,
-                  inout sdio,
-                  input [31:0] rdata,
-                  input [15:0] stream_in,
-                  output [31:0] status,
+                  input             sdi,
+                  output            sdo,
+                  input [31:0]      rdata,
+                  input [15:0]      stream_in,
+                  output [31:0]     status,
                   output reg [79:0] wdata,
                   output reg [15:0] stream_out,
-                  output reg wvalid);
+                  output reg        wvalid);
 
    reg [31:0]   tsr = ~0;
    reg [15:0]   rsr;
@@ -117,8 +118,8 @@ module sio_target(input c, c2x,
    sio_common io(.c(c), .c2x(c2x),
                  .wv(state == 60),
                  .d(delay[4:0]),
-                 .sdio(sdio),
-                 .tq((state < 26)||(state > 47)),
+                 .sdi(sdi),
+                 .sdo(sdo),
                  .td(tsr[3:0]),
                  .rd(id));
 

@@ -32,14 +32,14 @@
 
 `timescale 1ns / 1ps
 
-module sio_common(input c, c2x, wv, tq, // 125 MHz, 250 MHz, write tap, tristate
-                  input [4:0] d, // idelay tap
-                  inout sdio, // io pin
-                  input [3:0] td, // transmit data
+module sio_common(input c, c2x, wv, // 125 MHz, 250 MHz, write tap
+                  input [4:0]      d, // idelay tap
+                  input            sdi, // data in pin
+                  output           reg sdo, // data out pin
+                  input [3:0]      td, // transmit data
                   output reg [3:0] rd = 0); // receive data
    reg [3:0]  tsr = 4'hF; // transmit shift register
    reg        t = 0, tp = 0, ce = 0; // 125 MHz clock enable gen in 2x domain
-   reg        tq1 = 0; // buffered tristate at 1x clock
    reg [3:0]  rd2 = 4'hF; // rx data at 2x clock
    reg [1:0]  rdp = 2'h3; // rx data previous
    wire [1:0] id2; // rx data from IDDR at 2x clock
@@ -47,7 +47,6 @@ module sio_common(input c, c2x, wv, tq, // 125 MHz, 250 MHz, write tap, tristate
    always @ (posedge c)
      begin
         t <= ~t;
-        tq1 <= tq;
         rd <= rd2;
      end
 
@@ -65,28 +64,22 @@ module sio_common(input c, c2x, wv, tq, // 125 MHz, 250 MHz, write tap, tristate
           tsr[1:0] <= tsr[3:2];
      end
 
-   wire tq2, sdo, id0, id1;
-
-   reg  sdod;
-   reg  tq2d;
+   wire sdo_internal, sdi_delayed;
 
    always @ *
-     {sdod,tq2d} <= #0 {sdo,tq2}; // variable delay for sim purposes
+     sdo <= #0 sdo_internal; // variable delay for sim purposes
 
-   IOBUF iobuf_i (.O(id0), .IO(sdio), .I(sdod), .T(tq2d));
    IDELAYE2 #(.IDELAY_TYPE("VAR_LOAD"), .DELAY_SRC("IDATAIN"), .REFCLK_FREQUENCY(200.0)) deli
-     (.DATAOUT(id1), .C(c), .CNTVALUEIN(d[4:0]), .IDATAIN(id0),
+     (.DATAOUT(sdi_delayed), .C(c), .CNTVALUEIN(d[4:0]), .IDATAIN(sdi),
       .LD(wv),
       // tied off or ignored signals
       .CNTVALUEOUT(),.INC(1'b0), .CE(1'b0), .CINVCTRL(1'b0),
       .DATAIN(1'b0), .LDPIPEEN(1'b0), .REGRST(1'b0));
 
    IDDR #(.DDR_CLK_EDGE("SAME_EDGE_PIPELINED"), .INIT_Q1(1'b1), .INIT_Q2(1'b1), .SRTYPE("SYNC")) IDDR_i
-     (.Q1(id2[0]), .Q2(id2[1]), .C(c2x), .CE(1'b1), .D(id1), .R(1'b0), .S(1'b0));
+     (.Q1(id2[0]), .Q2(id2[1]), .C(c2x), .CE(1'b1), .D(sdi_delayed), .R(1'b0), .S(1'b0));
    ODDR #(.DDR_CLK_EDGE("SAME_EDGE"), .INIT(1'b1)) ODDR_d
-     (.Q(sdo), .C(c2x), .CE(1'b1), .D1(tsr[0]), .D2(tsr[1]), .R(1'b0), .S(1'b0));
-   ODDR #(.DDR_CLK_EDGE("SAME_EDGE"), .INIT(1'b0)) ODDR_t
-     (.Q(tq2), .C(c2x), .CE(1'b1), .D1(tq1), .D2(tq1), .R(1'b0), .S(1'b0));
+     (.Q(sdo_internal), .C(c2x), .CE(1'b1), .D1(tsr[0]), .D2(tsr[1]), .R(1'b0), .S(1'b0));
 
 endmodule
 

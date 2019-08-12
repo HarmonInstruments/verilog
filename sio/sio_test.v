@@ -28,7 +28,7 @@ module sio_test
    input [79:0]  wdata,
    input         wvalid);
 
-   wire          sdio;
+   wire          hdd, dhd;
 
    wire [79:0]   t_wdata;
    wire          t_wvalid;
@@ -39,7 +39,8 @@ module sio_test
    sio_target sio_target
      (.c(clock),
       .c2x(clock_2x),
-      .sdio(sdio),
+      .sdo(dhd),
+      .sdi(hdd),
       .rdata(t_rdata),
       .wdata(t_wdata),
       .wvalid(t_wvalid),
@@ -50,7 +51,8 @@ module sio_test
      (.c(clock),
       .c2x(clock_2x),
       .sync(1'b0),
-      .sdio(sdio),
+      .sdi(dhd),
+      .sdo(hdd),
       .stream_in(),
       .stream_out(stream_host),
       .rdata(rdata),

@@ -21,13 +21,15 @@
 `timescale 1ns / 1ps
 
 module sio_host (input c, c2x, sync, wvalid,
-                 inout sdio,
-                 input [79:0] wdata,
-                 input [15:0] stream_out,
+                 input             sdi,
+                 output            sdo,
+                 output            dhc,
+                 input [79:0]      wdata,
+                 input [15:0]      stream_out,
                  output reg [15:0] stream_in,
                  output reg [15:0] crc_failcount = 0,
                  output reg [31:0] rdata,
-                 output reg rvalid = 0);
+                 output reg        rvalid = 0);
    reg [83:0]   tsr = ~0;
    reg [15:0]   rsr;
    reg [5:0]    state = 60;
@@ -40,9 +42,11 @@ module sio_host (input c, c2x, sync, wvalid,
    wire         crc_match = rsr == crc_val;
    reg          was_read = 0;
    reg [5:0]    delay = {~4'd8,2'd2};
+   reg [1:0]    count_dhc;
 
    always @ (posedge c)
      begin
+        count_dhc <= count_dhc + 1'b1;
         if(wvalid)
           wdata_latch <= wdata;
         else if(state == 0)
@@ -98,8 +102,8 @@ module sio_host (input c, c2x, sync, wvalid,
    sio_common io(.c(c), .c2x(c2x),
                  .wv(wvalid && (wdata[75:64] == 1)),
                  .d(wdata[4:0]),
-                 .sdio(sdio),
-                 .tq((state > 29) && (state < 55)),
+                 .sdi(sdi),
+                 .sdo(sdo),
                  .td(tsr[3:0]),
                  .rd(id));
 
@@ -108,5 +112,8 @@ module sio_host (input c, c2x, sync, wvalid,
                     .r((state == 1) || rx_state[0]),
                     .di(state[5] ? rsr[15:12] : tsr[3:0]),
                     .crc(crc_val));
+
+   ODDR #(.DDR_CLK_EDGE("SAME_EDGE")) ODDR_dhc
+     (.Q(dhc), .C(c), .CE(1'b1), .D1(count_dhc[1]), .D2(count_dhc[1]), .R(1'b0), .S(1'b0));
 
 endmodule
