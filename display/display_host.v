@@ -197,31 +197,3 @@ module out_4x(input c, c2x, ce_2x, input [3:0] i, output o);
       .D2(i_2x_2[1]), // negative edge
       .R(1'b0), .S(1'b0));
 endmodule
-
-module out_1x(input c, c2x, ce_2x, input i, output o);
-
-   reg  i_1x = 1;
-   always @ (posedge c)
-     begin
-        i_1x <= i;
-     end
-
-   reg i_2x = 1;
-   reg i_2x_2 = 1;
-   always @ (posedge c2x)
-     begin
-        if(ce_2x)
-          i_2x <= i_1x;
-        i_2x_2 <= i_2x;
-     end
-
-   ODDR #(.DDR_CLK_EDGE("SAME_EDGE"), .INIT(1'b1), .SRTYPE("ASYNC"))
-   ODDR_d
-     (
-      .Q(o),
-      .C(c2x),
-      .CE(1'b1), // 1-bit clock enable input
-      .D1(i_2x_2), // positive edge
-      .D2(i_2x_2), // negative edge
-      .R(1'b0), .S(1'b0));
-endmodule
