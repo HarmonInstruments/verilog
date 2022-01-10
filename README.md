@@ -7,7 +7,7 @@ Documentation for some is here:
 http://harmoninstruments.com/cores/
 
 Most of the Harmon Instruments HDL has been migrated to
-[nMigen](https://github.com/nmigen/nmigen) and will be placed in
-another repository that will be made open source soon.
+[Amaranth HDL](https://github.com/amaranth-lang/) and will be placed in
+[Another repository](https://gitlab.com/harmoninstruments/harmon-instruments-open-hdl).
 
 ---------------------------------------------
